@@ -132,6 +132,11 @@
         display: none;
     }
 
+    .header-logout-btn {
+        padding: var(--space-2);
+        aspect-ratio: 1;
+    }
+
     .header-logout-btn span {
         display: none;
     }

@@ -258,6 +258,10 @@
         padding: var(--space-4);
     }
 
+    .issue-form-header h3 {
+        font-size: var(--text-base);
+    }
+
     .file-upload-area {
         padding: var(--space-4);
     }

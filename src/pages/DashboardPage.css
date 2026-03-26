@@ -6,7 +6,7 @@
 .dashboard-container {
     max-width: 960px;
     margin: 0 auto;
-    padding: var(--space-8) var(--space-6);
+    padding: var(--space-6) var(--space-4);
 }
 
 .dashboard-greeting {
@@ -124,6 +124,12 @@
 
     #issue-form {
         flex: 1.5;
+        position: sticky;
+        top: 96px; /* Header height (72px) + spacing (24px) */
+    }
+
+    .dashboard-status-section {
+        flex: 1.2;
     }
 }
 
@@ -175,7 +181,11 @@
 
 @media (max-width: 640px) {
     .dashboard-container {
-        padding: var(--space-5) var(--space-4);
+        padding: var(--space-4);
+    }
+
+    .dashboard-greeting {
+        margin-bottom: var(--space-6);
     }
 
     .dashboard-greeting h2 {
@@ -184,5 +194,6 @@
 
     .dashboard-stats {
         grid-template-columns: 1fr;
+        gap: var(--space-3);
     }
 }

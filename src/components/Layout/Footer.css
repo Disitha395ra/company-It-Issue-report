@@ -13,6 +13,17 @@
     text-align: center;
 }
 
+@media (max-width: 640px) {
+    .app-footer {
+        padding: var(--space-6) 0;
+    }
+    
+    .footer-content p {
+        font-size: var(--text-xs);
+        line-height: 1.6;
+    }
+}
+
 .footer-content p {
     margin: 0;
     font-size: var(--text-sm, 0.875rem);
