@@ -231,8 +231,8 @@ function onEditTrigger(e) {
   
   if (row > 1 && (col === 8 || col === 9)) {
      if (col === 9) { // Admin Resolution Column
-       const val = String(sheet.getRange(row, 9).getValue()).trim().toLowerCase();
-       if (val === 'yes' || val === 'no' || val === 'need further investigation') {
+       const val = String(sheet.getRange(row, 9).getValue()).trim();
+       if (val !== '') {
           sheet.getRange(row, 8).setValue('Completed'); // Set Status
           sheet.getRange(row, 10).setValue(''); // Clear Queue Number
        }
@@ -263,11 +263,8 @@ function setupTrigger() {
   sheet.getRange(1, 1, 1, 12).setFontWeight('bold').setBackground('#4338ca').setFontColor('#ffffff');
   sheet.setFrozenRows(1);
   
-  // Create Dropdown for Admin Resolution
-  const rule = SpreadsheetApp.newDataValidation()
-    .requireValueInList(['Yes', 'No', 'Need further investigation'], true)
-    .build();
-  sheet.getRange('I2:I').setDataValidation(rule);
+  // Optional: You could use data validation here or just let the Admin type anything!
+  // We'll let them type any custom resolution message instead of restricting it.
   
   // Protect Status column so humans don't break logic
   const protection = sheet.getRange('H2:H').protect().setDescription('Auto-managed Status');
