@@ -77,10 +77,11 @@ class SheetsApiService {
     /**
      * Submit a new issue to Google Sheet
      */
-    async submitIssue({ empNo, email, issueType, description, screenshotUrl }) {
+    async submitIssue({ empNo, email, phone, issueType, description, screenshotUrl }) {
         return this._post('submitIssue', {
             empNo,
             email,
+            phone,
             issueType,
             description,
             screenshotUrl: screenshotUrl || '',

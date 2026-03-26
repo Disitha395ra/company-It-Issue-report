@@ -63,7 +63,7 @@ export default function DashboardPage() {
                         <div className="stat-card">
                             <div className="stat-icon primary">📋</div>
                             <div>
-                                <div className="stat-value">{hasActiveIssue ? 1 : 0}</div>
+                                <div className="stat-value">{(hasActiveIssue && !isCompleted) ? 1 : 0}</div>
                                 <div className="stat-label">Active Issues</div>
                             </div>
                         </div>

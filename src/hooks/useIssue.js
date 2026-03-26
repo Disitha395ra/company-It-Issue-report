@@ -75,7 +75,7 @@ export function useIssue() {
     }, [empNo, refreshData]);
 
     // Submit new issue
-    const submitIssue = async ({ issueType, description, screenshotUrl }) => {
+    const submitIssue = async ({ issueType, phone, description, screenshotUrl }) => {
         setSubmitting(true);
         setError('');
         setSuccess('');
@@ -84,6 +84,7 @@ export function useIssue() {
             const result = await sheetsApi.submitIssue({
                 empNo,
                 email: user?.email || '',
+                phone,
                 issueType,
                 description,
                 screenshotUrl,

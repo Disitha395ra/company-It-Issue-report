@@ -6,6 +6,7 @@ import './IssueForm.css';
 
 export default function IssueForm({ onSubmit, submitting, error, success, clearMessages, hasActiveIssue }) {
     const [issueType, setIssueType] = useState('');
+    const [phoneNumber, setPhoneNumber] = useState('');
     const [description, setDescription] = useState('');
     const [file, setFile] = useState(null);
     const [preview, setPreview] = useState('');
@@ -17,6 +18,7 @@ export default function IssueForm({ onSubmit, submitting, error, success, clearM
     const validate = () => {
         const errors = {};
         if (!issueType) errors.issueType = 'Please select an issue type';
+        if (!phoneNumber.trim()) errors.phoneNumber = 'Please enter a contact number';
         if (!description.trim()) errors.description = 'Please describe the problem';
         else if (description.trim().length < 10) errors.description = 'Description must be at least 10 characters';
         setFieldErrors(errors);
@@ -81,12 +83,14 @@ export default function IssueForm({ onSubmit, submitting, error, success, clearM
 
             await onSubmit({
                 issueType,
+                phone: phoneNumber.trim(),
                 description: description.trim(),
                 screenshotUrl,
             });
 
             // Reset form on success
             setIssueType('');
+            setPhoneNumber('');
             setDescription('');
             removeFile();
         } catch (err) {
@@ -148,6 +152,30 @@ export default function IssueForm({ onSubmit, submitting, error, success, clearM
                     </select>
                     {fieldErrors.issueType && (
                         <div className="form-error">⚠ {fieldErrors.issueType}</div>
+                    )}
+                </div>
+
+                {/* Phone Number */}
+                <div className="form-group">
+                    <label className="form-label" htmlFor="phone-number">
+                        <span className="form-label-icon">📞</span>
+                        Contact Phone Number
+                    </label>
+                    <input
+                        type="text"
+                        id="phone-number"
+                        className={`form-select ${fieldErrors.phoneNumber ? 'error' : ''}`}
+                        style={{ paddingRight: 'var(--space-4)', backgroundImage: 'none' }}
+                        placeholder="e.g. 077 123 4567"
+                        value={phoneNumber}
+                        onChange={(e) => {
+                            setPhoneNumber(e.target.value);
+                            if (fieldErrors.phoneNumber) setFieldErrors((p) => ({ ...p, phoneNumber: '' }));
+                        }}
+                        disabled={isLoading || isBlocked}
+                    />
+                    {fieldErrors.phoneNumber && (
+                        <div className="form-error">⚠ {fieldErrors.phoneNumber}</div>
                     )}
                 </div>
 

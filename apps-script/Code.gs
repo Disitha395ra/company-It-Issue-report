@@ -102,20 +102,21 @@ function submitIssue(data) {
       timestamp, // A
       data.empNo, // B
       data.email, // C
-      data.issueType, // D
-      data.description, // E
-      imageFormula, // F (Visual Appears Here)
-      'Pending', // G (Status)
-      '', // H (Admin Resolution)
-      queueNumber, // I (Queue No)
-      '', // J (Feedback)
-      driveUrl // K (Raw URL hidden for Frontend text pull)
+      data.phone, // D
+      data.issueType, // E
+      data.description, // F
+      imageFormula, // G (Visual Appears Here)
+      'Pending', // H (Status)
+      '', // I (Admin Resolution)
+      queueNumber, // J (Queue No)
+      '', // K (Feedback)
+      driveUrl // L (Raw URL hidden for Frontend text pull)
     ]);
     
     const newRow = sheet.getLastRow();
     if (imageFormula !== '') {
       sheet.setRowHeight(newRow, 120);
-      sheet.setColumnWidth(6, 120);
+      sheet.setColumnWidth(7, 120);
     }
     
     return { success: true, message: 'Issue submitted!', queueNumber: queueNumber };
@@ -135,23 +136,23 @@ function findActiveIssue(sheet, empNo) {
   for (let i = data.length - 1; i >= 1; i--) {
     const row = data[i];
     if (String(row[1]).trim() === String(empNo).trim()) {
-      const originalStatus = String(row[6]).trim();
+      const originalStatus = String(row[7]).trim();
       const statusLower = originalStatus.toLowerCase();
-      const adminRes = String(row[7]).trim();
-      const feedback = String(row[9]).trim();
-      const rawUrl = String(row[10] || '').trim();
+      const adminRes = String(row[8]).trim();
+      const feedback = String(row[10]).trim();
+      const rawUrl = String(row[11] || '').trim();
       
       const payload = {
-        rowIndex: i + 1, timestamp: row[0], empNo: row[1], email: row[2],
-        issueType: row[3], description: row[4], screenshotUrl: rawUrl,
-        status: originalStatus, adminResolution: adminRes, queueNumber: row[8], feedback: ''
+        rowIndex: i + 1, timestamp: row[0], empNo: row[1], email: row[2], phone: row[3],
+        issueType: row[4], description: row[5], screenshotUrl: rawUrl,
+        status: originalStatus, adminResolution: adminRes, queueNumber: row[9], feedback: ''
       };
       
       if (statusLower === 'pending') {
          payload.status = 'Pending';
          return payload;
       }
-      if (statusLower === 'completed' && !feedback) {
+      if ((statusLower === 'completed' || statusLower === 'complete') && !feedback) {
          payload.status = 'Completed';
          return payload;
       }
@@ -164,7 +165,7 @@ function calculateQueueNumber(sheet) {
   const data = sheet.getDataRange().getValues();
   let count = 0;
   for (let i = 1; i < data.length; i++) {
-    if (String(data[i][6]).trim().toLowerCase() === 'pending') count++;
+    if (String(data[i][7]).trim().toLowerCase() === 'pending') count++;
   }
   return count + 1;
 }
@@ -177,11 +178,11 @@ function submitFeedback(data) {
     const rowIndex = parseInt(data.rowIndex);
     if (!rowIndex || rowIndex < 2) return { success: false, message: 'Invalid row reference' };
     
-    const rowData = sheet.getRange(rowIndex, 1, 1, 10).getValues()[0];
+    const rowData = sheet.getRange(rowIndex, 1, 1, 12).getValues()[0];
     if (String(rowData[1]).trim() !== String(data.empNo).trim()) return { success: false, message: 'Unauthorized' };
-    if (String(rowData[6]).trim().toLowerCase() !== 'completed') return { success: false, message: 'Issue not completed' };
+    if (String(rowData[7]).trim().toLowerCase() !== 'completed' && String(rowData[7]).trim().toLowerCase() !== 'complete') return { success: false, message: 'Issue not completed' };
     
-    sheet.getRange(rowIndex, 10).setValue(data.feedback);
+    sheet.getRange(rowIndex, 11).setValue(data.feedback);
     recalculateQueueNumbers(sheet);
     return { success: true, message: 'Feedback submitted!' };
   } finally {
@@ -194,9 +195,9 @@ function getQueueStatus(empNo) {
   let totalPending = 0;
   let userQueueNumber = 0;
   for (let i = 1; i < data.length; i++) {
-    if (String(data[i][6]).trim().toLowerCase() === 'pending') {
+    if (String(data[i][7]).trim().toLowerCase() === 'pending') {
       totalPending++;
-      if (String(data[i][1]).trim() === String(empNo).trim()) userQueueNumber = data[i][8];
+      if (String(data[i][1]).trim() === String(empNo).trim()) userQueueNumber = data[i][9];
     }
   }
   return { success: true, totalPending: totalPending, userQueueNumber: userQueueNumber };
@@ -206,7 +207,7 @@ function getPendingCount() {
   const data = getSheet().getDataRange().getValues();
   let count = 0;
   for (let i = 1; i < data.length; i++) {
-    if (String(data[i][6]).trim().toLowerCase() === 'pending') count++;
+    if (String(data[i][7]).trim().toLowerCase() === 'pending') count++;
   }
   return { success: true, count: count };
 }
@@ -215,8 +216,8 @@ function recalculateQueueNumbers(sheet) {
   const data = sheet.getDataRange().getValues();
   let queueNum = 1;
   for (let i = 1; i < data.length; i++) {
-    if (String(data[i][6]).trim().toLowerCase() === 'pending') {
-      sheet.getRange(i + 1, 9).setValue(queueNum);
+    if (String(data[i][7]).trim().toLowerCase() === 'pending') {
+      sheet.getRange(i + 1, 10).setValue(queueNum);
       queueNum++;
     }
   }
@@ -228,12 +229,12 @@ function onEditTrigger(e) {
   const col = e.range.getColumn();
   const row = e.range.getRow();
   
-  if (row > 1 && (col === 7 || col === 8)) {
-     if (col === 8) { // Admin Resolution Column
-       const val = String(sheet.getRange(row, 8).getValue()).trim().toLowerCase();
+  if (row > 1 && (col === 8 || col === 9)) {
+     if (col === 9) { // Admin Resolution Column
+       const val = String(sheet.getRange(row, 9).getValue()).trim().toLowerCase();
        if (val === 'yes' || val === 'no' || val === 'need further investigation') {
-          sheet.getRange(row, 7).setValue('Completed'); // Set Status
-          sheet.getRange(row, 9).setValue(''); // Clear Queue Number
+          sheet.getRange(row, 8).setValue('Completed'); // Set Status
+          sheet.getRange(row, 10).setValue(''); // Clear Queue Number
        }
      }
      recalculateQueueNumbers(sheet);
@@ -254,25 +255,25 @@ function setupTrigger() {
   let sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) sheet = ss.insertSheet(SHEET_NAME);
   
-  sheet.getRange(1, 1, 1, 11).setValues([[
-    'Timestamp', 'EmpNo', 'Email', 'Issue Type', 
+  sheet.getRange(1, 1, 1, 12).setValues([[
+    'Timestamp', 'EmpNo', 'Email', 'Phone Number', 'Issue Type', 
     'Description', 'Screenshot Image', 'Status', 
     'Admin Resolution', 'Queue Number', 'Feedback', 'Raw URL'
   ]]);
-  sheet.getRange(1, 1, 1, 11).setFontWeight('bold').setBackground('#4338ca').setFontColor('#ffffff');
+  sheet.getRange(1, 1, 1, 12).setFontWeight('bold').setBackground('#4338ca').setFontColor('#ffffff');
   sheet.setFrozenRows(1);
   
   // Create Dropdown for Admin Resolution
   const rule = SpreadsheetApp.newDataValidation()
     .requireValueInList(['Yes', 'No', 'Need further investigation'], true)
     .build();
-  sheet.getRange('H2:H').setDataValidation(rule);
+  sheet.getRange('I2:I').setDataValidation(rule);
   
   // Protect Status column so humans don't break logic
-  const protection = sheet.getRange('G2:G').protect().setDescription('Auto-managed Status');
+  const protection = sheet.getRange('H2:H').protect().setDescription('Auto-managed Status');
   protection.setWarningOnly(true);
   
-  sheet.hideColumns(11); // Hide Raw URL payload column
+  sheet.hideColumns(12); // Hide Raw URL payload column
   
   Logger.log('Trigger and Sheet auto-format applied successfully!');
 }

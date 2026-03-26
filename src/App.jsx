@@ -3,6 +3,7 @@ import { ToastProvider } from './components/UI/Toast';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import LoadingSpinner from './components/UI/LoadingSpinner';
+import Footer from './components/Layout/Footer';
 import './App.css';
 
 function AppContent() {
@@ -24,7 +25,10 @@ export default function App() {
     return (
         <AuthProvider>
             <ToastProvider>
-                <AppContent />
+                <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+                    <AppContent />
+                    <Footer />
+                </div>
             </ToastProvider>
         </AuthProvider>
     );

@@ -41,6 +41,13 @@ export default function IssueStatus({ issue }) {
                     </div>
 
                     <div className="issue-detail">
+                        <span className="issue-detail-label">Contact Phone</span>
+                        <span className="issue-detail-value">
+                            {issue.phone || '—'}
+                        </span>
+                    </div>
+
+                    <div className="issue-detail">
                         <span className="issue-detail-label">Status</span>
                         <span className="issue-detail-value">
                             {isPending ? '⏳ Awaiting Resolution' : '✅ Resolved'}
