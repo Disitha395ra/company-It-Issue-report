@@ -9,7 +9,7 @@ export default function Footer() {
                 <p>
                     &copy; {currentYear} IT Support Portal. Developed by{' '}
                     <a
-                        href="https://github.com/Disitha395ra"
+                        href="https://disitha-profile.web.app/"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="profile-link"
