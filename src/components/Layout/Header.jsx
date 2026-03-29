@@ -14,14 +14,27 @@ export default function Header() {
 
     const getInitials = (email) => {
         if (!email) return '?';
-        return email.charAt(0).toUpperCase();
+        const name = email.split('@')[0];
+        if (name.includes('.')) {
+            const parts = name.split('.');
+            return (parts[0][0] + parts[1][0]).toUpperCase();
+        }
+        return name.substring(0, 2).toUpperCase();
+    };
+
+    const getDisplayName = (email) => {
+        if (!email) return 'User';
+        const name = email.split('@')[0];
+        return name.split('.').map(n => n.charAt(0).toUpperCase() + n.slice(1)).join(' ');
     };
 
     return (
         <header className={`header ${scrolled ? 'scrolled' : ''}`} id="main-header">
             <div className="header-brand">
-                <div className="header-logo">🛠️</div>
-                <div>
+                <div className="header-logo">
+                    <span className="header-logo-icon">🛠️</span>
+                </div>
+                <div className="header-brand-text">
                     <h1 className="header-title">IT Support Portal</h1>
                     <p className="header-subtitle">Issue Tracking & Resolution</p>
                 </div>
@@ -32,7 +45,7 @@ export default function Header() {
                     <div className="header-user">
                         <div className="header-avatar">{getInitials(user.email)}</div>
                         <div className="header-user-info">
-                            <span className="header-user-name">{user.email}</span>
+                            <span className="header-user-name">{getDisplayName(user.email)}</span>
                             <span className="header-user-id">EMP#{user.empNo}</span>
                         </div>
                     </div>

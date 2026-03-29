@@ -8,6 +8,8 @@ export function useIssue() {
     const { user } = useAuth();
     const [activeIssue, setActiveIssue] = useState(null);
     const [queueInfo, setQueueInfo] = useState(null);
+    const [issueHistory, setIssueHistory] = useState([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
@@ -46,7 +48,28 @@ export function useIssue() {
         }
     }, [empNo]);
 
-    // Combined fetch
+    // Fetch issue history
+    const fetchIssueHistory = useCallback(async () => {
+        if (!empNo) return;
+
+        setHistoryLoading(true);
+        try {
+            const result = await sheetsApi.getIssueHistory(empNo);
+            if (result.success && result.issues) {
+                setIssueHistory(result.issues);
+            } else {
+                setIssueHistory([]);
+            }
+        } catch (err) {
+            console.error('Error fetching issue history:', err);
+            // Don't fail hard — history is a "nice to have" view
+            setIssueHistory([]);
+        } finally {
+            setHistoryLoading(false);
+        }
+    }, [empNo]);
+
+    // Combined fetch (active + queue)
     const refreshData = useCallback(async () => {
         await Promise.all([fetchActiveIssue(), fetchQueueStatus()]);
     }, [fetchActiveIssue, fetchQueueStatus]);
@@ -55,13 +78,14 @@ export function useIssue() {
     useEffect(() => {
         if (empNo) {
             setLoading(true);
-            refreshData().finally(() => setLoading(false));
+            Promise.all([refreshData(), fetchIssueHistory()])
+                .finally(() => setLoading(false));
         } else {
             setLoading(false);
         }
-    }, [empNo, refreshData]);
+    }, [empNo, refreshData, fetchIssueHistory]);
 
-    // Polling
+    // Polling active data
     useEffect(() => {
         if (empNo) {
             pollRef.current = setInterval(refreshData, POLL_INTERVAL);
@@ -93,6 +117,8 @@ export function useIssue() {
             if (result.success) {
                 setSuccess('Issue submitted successfully! Your queue number is ' + (result.queueNumber || 'assigned.'));
                 await refreshData();
+                // Refresh history as well after submitting
+                fetchIssueHistory();
                 return result;
             } else {
                 throw new Error(result.message || 'Failed to submit issue');
@@ -122,6 +148,8 @@ export function useIssue() {
                 setSuccess('Thank you for your feedback!');
                 setActiveIssue(null);
                 await refreshData();
+                // Refresh history after feedback
+                fetchIssueHistory();
                 return result;
             } else {
                 throw new Error(result.message || 'Failed to submit feedback');
@@ -139,9 +167,19 @@ export function useIssue() {
         setSuccess('');
     };
 
+    // Computed stats from history
+    const historyStats = {
+        totalIssues: issueHistory.length,
+        resolvedIssues: issueHistory.filter(i => i.status === 'Completed').length,
+        pendingIssues: issueHistory.filter(i => i.status === 'Pending').length,
+    };
+
     return {
         activeIssue,
         queueInfo,
+        issueHistory,
+        historyLoading,
+        historyStats,
         loading,
         submitting,
         error,
@@ -149,6 +187,7 @@ export function useIssue() {
         submitIssue,
         submitFeedback,
         refreshData,
+        refreshHistory: fetchIssueHistory,
         clearMessages,
         hasActiveIssue: !!activeIssue,
         isCompleted: activeIssue?.status === 'Completed',

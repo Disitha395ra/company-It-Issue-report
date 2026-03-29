@@ -2,7 +2,7 @@
     position: sticky;
     top: 0;
     z-index: var(--z-sticky);
-    background: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--border-light);
@@ -15,7 +15,7 @@
 }
 
 .header.scrolled {
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 1px 12px rgba(0, 0, 0, 0.08);
 }
 
 .header-brand {
@@ -25,16 +25,34 @@
 }
 
 .header-logo {
-    width: 40px;
-    height: 40px;
+    width: 42px;
+    height: 42px;
     background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
     border-radius: var(--radius-lg);
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.header-logo::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.15) 100%);
+}
+
+.header-logo-icon {
     font-size: 20px;
-    color: white;
-    box-shadow: var(--shadow-sm);
+    position: relative;
+    z-index: 1;
+}
+
+.header-brand-text {
+    display: flex;
+    flex-direction: column;
 }
 
 .header-title {
@@ -42,19 +60,20 @@
     font-weight: 700;
     color: var(--text-primary);
     letter-spacing: -0.02em;
+    line-height: 1.2;
 }
 
 .header-subtitle {
     font-size: var(--text-xs);
-    color: var(--text-secondary);
+    color: var(--text-tertiary);
     font-weight: 400;
-    margin-top: -2px;
+    line-height: 1.2;
 }
 
 .header-actions {
     display: flex;
     align-items: center;
-    gap: var(--space-4);
+    gap: var(--space-3);
 }
 
 .header-user {
@@ -64,6 +83,7 @@
     padding: var(--space-2) var(--space-3);
     border-radius: var(--radius-lg);
     background: var(--gray-50);
+    border: 1px solid var(--border-light);
 }
 
 .header-avatar {
@@ -75,8 +95,10 @@
     align-items: center;
     justify-content: center;
     color: white;
-    font-weight: 600;
-    font-size: var(--text-sm);
+    font-weight: 700;
+    font-size: var(--text-xs);
+    letter-spacing: 0.03em;
+    box-shadow: 0 2px 6px rgba(99, 102, 241, 0.25);
 }
 
 .header-user-info {
@@ -88,11 +110,13 @@
     font-size: var(--text-sm);
     font-weight: 600;
     color: var(--text-primary);
+    line-height: 1.2;
 }
 
 .header-user-id {
     font-size: var(--text-xs);
-    color: var(--text-secondary);
+    color: var(--text-tertiary);
+    line-height: 1.2;
 }
 
 .header-logout-btn {
@@ -100,24 +124,37 @@
     align-items: center;
     gap: var(--space-2);
     padding: var(--space-2) var(--space-4);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
     color: var(--text-secondary);
     font-size: var(--text-sm);
     font-weight: 500;
     transition: all var(--transition-fast);
     border: 1px solid var(--border-light);
+    background: var(--surface-elevated);
+    cursor: pointer;
 }
 
 .header-logout-btn:hover {
     color: var(--danger-600);
     border-color: var(--danger-200);
     background: var(--danger-50);
+    box-shadow: 0 2px 8px rgba(244, 63, 94, 0.1);
 }
 
-@media (max-width: 640px) {
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
     .header {
         padding: 0 var(--space-4);
         height: 64px;
+    }
+
+    .header-logo {
+        width: 36px;
+        height: 36px;
+    }
+
+    .header-logo-icon {
+        font-size: 18px;
     }
 
     .header-title {
@@ -128,16 +165,54 @@
         display: none;
     }
 
+    .header-actions {
+        gap: var(--space-2);
+    }
+
+    .header-user {
+        padding: var(--space-1) var(--space-2);
+    }
+
     .header-user-info {
         display: none;
     }
 
     .header-logout-btn {
         padding: var(--space-2);
-        aspect-ratio: 1;
+        border-radius: var(--radius-md);
     }
 
     .header-logout-btn span {
         display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .header {
+        padding: 0 var(--space-3);
+        height: 56px;
+    }
+
+    .header-brand {
+        gap: var(--space-2);
+    }
+
+    .header-logo {
+        width: 32px;
+        height: 32px;
+    }
+
+    .header-logo-icon {
+        font-size: 16px;
+    }
+
+    .header-title {
+        font-size: var(--text-sm);
+    }
+
+    .header-avatar {
+        width: 30px;
+        height: 30px;
+        font-size: 0.65rem;
     }
 }

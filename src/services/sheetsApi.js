@@ -119,6 +119,14 @@ class SheetsApiService {
     async getPendingCount() {
         return this._get('getPendingCount');
     }
+
+    /**
+     * Get issue history for a specific employee
+     * Returns all past submitted issues (completed + feedback given)
+     */
+    async getIssueHistory(empNo) {
+        return this._get('getIssueHistory', { empNo });
+    }
 }
 
 const sheetsApi = new SheetsApiService();

@@ -16,6 +16,7 @@ function doGet(e) {
       case 'getActiveIssue': result = getActiveIssue(e.parameter.empNo); break;
       case 'getQueueStatus': result = getQueueStatus(e.parameter.empNo); break;
       case 'getPendingCount': result = getPendingCount(); break;
+      case 'getIssueHistory': result = getIssueHistory(e.parameter.empNo); break;
       default: result = { success: false, message: 'Unknown action: ' + action };
     }
     return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
@@ -210,6 +211,38 @@ function getPendingCount() {
     if (String(data[i][7]).trim().toLowerCase() === 'pending') count++;
   }
   return { success: true, count: count };
+}
+
+function getIssueHistory(empNo) {
+  if (!empNo) return { success: false, message: 'Employee number required' };
+  const sheet = getSheet();
+  const data = sheet.getDataRange().getValues();
+  const issues = [];
+  
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    if (String(row[1]).trim() === String(empNo).trim()) {
+      issues.push({
+        rowIndex: i + 1,
+        timestamp: row[0],
+        empNo: row[1],
+        email: row[2],
+        phone: row[3],
+        issueType: row[4],
+        description: row[5],
+        status: row[7],
+        adminResolution: row[8],
+        queueNumber: row[9],
+        feedback: row[10],
+        screenshotUrl: row[11] || '' // raw URL
+      });
+    }
+  }
+  
+  // Return newest first
+  issues.reverse();
+  
+  return { success: true, issues: issues };
 }
 
 function recalculateQueueNumbers(sheet) {
