@@ -6,12 +6,18 @@ export default function IssueStatus({ issue }) {
 
     const isPending = issue.status === 'Pending';
     const isCompleted = issue.status === 'Completed';
+    const isInProgress = issue.status === 'In Progress';
+    const isNotCompleted = issue.status === 'Not Completed';
 
     return (
         <div className="issue-status-card" id="issue-status">
             <div className="issue-status-header">
                 <h3>📋 Current Issue</h3>
-                <span className={`status-badge ${isPending ? 'pending' : 'completed'}`}>
+                <span className={`status-badge ${
+                    isCompleted ? 'completed' :
+                    isNotCompleted ? 'rejected' :
+                    isInProgress ? 'in-progress' : 'pending'
+                }`}>
                     <span className="status-badge-dot"></span>
                     {issue.status}
                 </span>
@@ -50,7 +56,9 @@ export default function IssueStatus({ issue }) {
                     <div className="issue-detail">
                         <span className="issue-detail-label">Status</span>
                         <span className="issue-detail-value">
-                            {isPending ? '⏳ Awaiting Resolution' : '✅ Resolved'}
+                            {isCompleted ? '✅ Resolved' : 
+                             isNotCompleted ? '❌ Not Resolved' :
+                             isInProgress ? '🔄 Under Investigation' : '⏳ Awaiting Resolution'}
                         </span>
                     </div>
 
@@ -77,10 +85,10 @@ export default function IssueStatus({ issue }) {
                     </div>
                 )}
 
-                {isCompleted && !issue.feedback && (
+                {(isCompleted || isNotCompleted) && !issue.feedback && (
                     <div className="completed-notice">
-                        <span className="completed-notice-icon">🎉</span>
-                        <h4>Your issue has been resolved!</h4>
+                        <span className="completed-notice-icon">{isCompleted ? '🎉' : '📝'}</span>
+                        <h4>{isCompleted ? 'Your issue has been resolved!' : 'Your issue was marked as not complete.'}</h4>
                         <p>Please provide your feedback below to close this ticket.</p>
                     </div>
                 )}

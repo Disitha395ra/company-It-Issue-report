@@ -7,8 +7,8 @@ export default function IssueHistory({ issues, loading, onRefresh }) {
     const [filter, setFilter] = useState('all'); // 'all', 'completed', 'pending'
 
     const filteredIssues = issues.filter((issue) => {
-        if (filter === 'completed') return issue.status === 'Completed';
-        if (filter === 'pending') return issue.status === 'Pending';
+        if (filter === 'completed') return issue.status === 'Completed' || issue.status === 'Not Completed';
+        if (filter === 'pending') return issue.status === 'Pending' || issue.status === 'In Progress';
         return true;
     });
 
@@ -109,8 +109,14 @@ export default function IssueHistory({ issues, loading, onRefresh }) {
                                     <div className="history-item-date">{formatDate(issue.timestamp)}</div>
                                 </div>
                                 <div className="history-item-right">
-                                    <span className={`history-status-badge ${issue.status === 'Completed' ? 'resolved' : 'pending'}`}>
-                                        {issue.status === 'Completed' ? '✅ Resolved' : '⏳ Pending'}
+                                    <span className={`history-status-badge ${
+                                        issue.status === 'Completed' ? 'resolved' : 
+                                        issue.status === 'Not Completed' ? 'rejected' : 
+                                        issue.status === 'In Progress' ? 'in-progress' : 'pending'
+                                    }`}>
+                                        {issue.status === 'Completed' ? '✅ Resolved' : 
+                                         issue.status === 'Not Completed' ? '❌ Not Completed' :
+                                         issue.status === 'In Progress' ? '🔄 In Progress' : '⏳ Pending'}
                                     </span>
                                     <svg className={`history-item-chevron ${expandedId === (issue.rowIndex || index) ? 'rotated' : ''}`}
                                         width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

@@ -215,6 +215,18 @@
     border: 1px solid var(--warning-200, #fde68a);
 }
 
+.history-status-badge.rejected {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+}
+
+.history-status-badge.in-progress {
+    background: #dbeafe;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+
 .history-item-chevron {
     color: var(--text-tertiary);
     transition: transform var(--transition-fast);

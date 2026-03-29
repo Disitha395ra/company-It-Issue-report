@@ -49,7 +49,7 @@ export default function QueueDisplay({ queueInfo, issue }) {
                     <span className="queue-message-text">
                         {queueNumber === 1
                             ? 'Your issue is being addressed next. The IT team will reach out to you shortly.'
-                            : `There ${queueNumber - 1 === 1 ? 'is' : 'are'} ${queueNumber - 1} issue${queueNumber - 1 > 1 ? 's' : ''} ahead of you. Queue updates automatically every 15 seconds.`
+                            : `There ${queueNumber - 1 === 1 ? 'is' : 'are'} ${queueNumber - 1} issue${queueNumber - 1 > 1 ? 's' : ''} ahead of you. Queue updates automatically in real-time.`
                         }
                     </span>
                 </div>

@@ -149,12 +149,12 @@ function findActiveIssue(sheet, empNo) {
         status: originalStatus, adminResolution: adminRes, queueNumber: row[9], feedback: ''
       };
       
-      if (statusLower === 'pending') {
-         payload.status = 'Pending';
+      if (statusLower === 'pending' || statusLower === 'in progress') {
+         payload.status = originalStatus;
          return payload;
       }
-      if ((statusLower === 'completed' || statusLower === 'complete') && !feedback) {
-         payload.status = 'Completed';
+      if ((statusLower === 'completed' || statusLower === 'complete' || statusLower === 'not completed') && !feedback) {
+         payload.status = originalStatus === 'Not Completed' ? 'Not Completed' : 'Completed';
          return payload;
       }
     }
@@ -181,7 +181,11 @@ function submitFeedback(data) {
     
     const rowData = sheet.getRange(rowIndex, 1, 1, 12).getValues()[0];
     if (String(rowData[1]).trim() !== String(data.empNo).trim()) return { success: false, message: 'Unauthorized' };
-    if (String(rowData[7]).trim().toLowerCase() !== 'completed' && String(rowData[7]).trim().toLowerCase() !== 'complete') return { success: false, message: 'Issue not completed' };
+    
+    const rowStatus = String(rowData[7]).trim().toLowerCase();
+    if (rowStatus !== 'completed' && rowStatus !== 'complete' && rowStatus !== 'not completed') {
+      return { success: false, message: 'Issue not completed' };
+    }
     
     sheet.getRange(rowIndex, 11).setValue(data.feedback);
     recalculateQueueNumbers(sheet);
@@ -265,9 +269,15 @@ function onEditTrigger(e) {
   if (row > 1 && (col === 8 || col === 9)) {
      if (col === 9) { // Admin Resolution Column
        const val = String(sheet.getRange(row, 9).getValue()).trim();
-       if (val !== '') {
+       if (val === 'Complete') {
           sheet.getRange(row, 8).setValue('Completed'); // Set Status
           sheet.getRange(row, 10).setValue(''); // Clear Queue Number
+       } else if (val === 'Not complete') {
+          sheet.getRange(row, 8).setValue('Not Completed');
+          sheet.getRange(row, 10).setValue('');
+       } else if (val === 'Need further investigation') {
+          sheet.getRange(row, 8).setValue('In Progress');
+          sheet.getRange(row, 10).setValue('');
        }
      }
      recalculateQueueNumbers(sheet);
@@ -326,6 +336,12 @@ function setupTrigger() {
   sheet.setColumnWidth(10, 110); // Queue Number
   sheet.setColumnWidth(11, 250); // Feedback
   sheet.hideColumns(12); // Hide Raw URL payload column
+
+  // Data Validation for Admin Resolution (Column I)
+  const ruleDropdown = SpreadsheetApp.newDataValidation()
+    .requireValueInList(['Complete', 'Not complete', 'Need further investigation'], true)
+    .build();
+  sheet.getRange('I2:I').setDataValidation(ruleDropdown);
   
   // Apply Conditional Formatting for Status
   sheet.clearConditionalFormatRules();
@@ -343,7 +359,21 @@ function setupTrigger() {
     .setRanges([sheet.getRange('H2:H')])
     .build();
     
-  sheet.setConditionalFormatRules([rulePending, ruleCompleted]);
+  const ruleNotCompleted = SpreadsheetApp.newConditionalFormatRule()
+    .whenTextEqualTo('Not Completed')
+    .setBackground('#fee2e2') // Red 100
+    .setFontColor('#b91c1c')  // Red 700
+    .setRanges([sheet.getRange('H2:H')])
+    .build();
+
+  const ruleInProgress = SpreadsheetApp.newConditionalFormatRule()
+    .whenTextEqualTo('In Progress')
+    .setBackground('#dbeafe') // Blue 100
+    .setFontColor('#1d4ed8')  // Blue 700
+    .setRanges([sheet.getRange('H2:H')])
+    .build();
+    
+  sheet.setConditionalFormatRules([rulePending, ruleCompleted, ruleNotCompleted, ruleInProgress]);
   
   // Protect Status column so humans don't break logic
   const protection = sheet.getRange('H2:H').protect().setDescription('Auto-managed Status');

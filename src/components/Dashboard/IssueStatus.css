@@ -64,6 +64,27 @@
     background: var(--accent-500);
 }
 
+.status-badge.rejected {
+    background: linear-gradient(135deg, #fee2e2, #fef2f2);
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+}
+
+.status-badge.in-progress {
+    background: linear-gradient(135deg, #dbeafe, #eff6ff);
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+
+.status-badge.rejected .status-badge-dot {
+    background: #ef4444;
+}
+
+.status-badge.in-progress .status-badge-dot {
+    background: #3b82f6;
+    animation: pulse 2s ease-in-out infinite;
+}
+
 .issue-status-body {
     padding: var(--space-6);
 }

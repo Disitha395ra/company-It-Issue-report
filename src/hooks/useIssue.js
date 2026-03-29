@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import sheetsApi from '../services/sheetsApi';
 import { useAuth } from '../contexts/AuthContext';
 
-const POLL_INTERVAL = 15000; // 15 seconds
+const POLL_INTERVAL = 3000; // 3 seconds for real-time updates
 
 export function useIssue() {
     const { user } = useAuth();
@@ -170,8 +170,8 @@ export function useIssue() {
     // Computed stats from history
     const historyStats = {
         totalIssues: issueHistory.length,
-        resolvedIssues: issueHistory.filter(i => i.status === 'Completed').length,
-        pendingIssues: issueHistory.filter(i => i.status === 'Pending').length,
+        resolvedIssues: issueHistory.filter(i => i.status === 'Completed' || i.status === 'Not Completed').length,
+        pendingIssues: issueHistory.filter(i => i.status === 'Pending' || i.status === 'In Progress').length,
     };
 
     return {
@@ -190,8 +190,8 @@ export function useIssue() {
         refreshHistory: fetchIssueHistory,
         clearMessages,
         hasActiveIssue: !!activeIssue,
-        isCompleted: activeIssue?.status === 'Completed',
-        needsFeedback: activeIssue?.status === 'Completed' && !activeIssue?.feedback,
+        isCompleted: activeIssue?.status === 'Completed' || activeIssue?.status === 'Not Completed',
+        needsFeedback: (activeIssue?.status === 'Completed' || activeIssue?.status === 'Not Completed') && !activeIssue?.feedback,
     };
 }
 
