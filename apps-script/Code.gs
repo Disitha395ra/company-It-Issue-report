@@ -293,17 +293,61 @@ function setupTrigger() {
     'Description', 'Screenshot Image', 'Status', 
     'Admin Resolution', 'Queue Number', 'Feedback', 'Raw URL'
   ]]);
-  sheet.getRange(1, 1, 1, 12).setFontWeight('bold').setBackground('#4338ca').setFontColor('#ffffff');
+  
+  // Header Styling
+  sheet.getRange(1, 1, 1, 12)
+       .setFontWeight('bold')
+       .setBackground('#4f46e5') // Modern Indigo
+       .setFontColor('#ffffff')
+       .setVerticalAlignment('middle')
+       .setHorizontalAlignment('center');
+       
+  sheet.setRowHeight(1, 40);
   sheet.setFrozenRows(1);
   
-  // Optional: You could use data validation here or just let the Admin type anything!
-  // We'll let them type any custom resolution message instead of restricting it.
+  // General column styling (Wrap text & vertical align middle)
+  sheet.getRange(2, 1, sheet.getMaxRows(), 12).setVerticalAlignment('middle');
+  sheet.getRange('F2:F').setWrap(true); // Description
+  sheet.getRange('I2:I').setWrap(true); // Admin Resolution
+  sheet.getRange('K2:K').setWrap(true); // Feedback
+  sheet.getRange('H2:H').setHorizontalAlignment('center'); // Status
+  sheet.getRange('J2:J').setHorizontalAlignment('center'); // Queue Number
+  
+  // Set Column Widths for readability
+  sheet.setColumnWidth(1, 160); // Timestamp
+  sheet.setColumnWidth(2, 90);  // EmpNo
+  sheet.setColumnWidth(3, 180); // Email
+  sheet.setColumnWidth(4, 120); // Phone
+  sheet.setColumnWidth(5, 150); // Issue Type
+  sheet.setColumnWidth(6, 350); // Description
+  sheet.setColumnWidth(7, 130); // Screenshot
+  sheet.setColumnWidth(8, 110); // Status
+  sheet.setColumnWidth(9, 350); // Admin Resolution
+  sheet.setColumnWidth(10, 110); // Queue Number
+  sheet.setColumnWidth(11, 250); // Feedback
+  sheet.hideColumns(12); // Hide Raw URL payload column
+  
+  // Apply Conditional Formatting for Status
+  sheet.clearConditionalFormatRules();
+  const rulePending = SpreadsheetApp.newConditionalFormatRule()
+    .whenTextEqualTo('Pending')
+    .setBackground('#fef3c7') // Amber 50
+    .setFontColor('#b45309')  // Amber 700
+    .setRanges([sheet.getRange('H2:H')])
+    .build();
+    
+  const ruleCompleted = SpreadsheetApp.newConditionalFormatRule()
+    .whenTextEqualTo('Completed')
+    .setBackground('#d1fae5') // Emerald 100
+    .setFontColor('#047857')  // Emerald 700
+    .setRanges([sheet.getRange('H2:H')])
+    .build();
+    
+  sheet.setConditionalFormatRules([rulePending, ruleCompleted]);
   
   // Protect Status column so humans don't break logic
   const protection = sheet.getRange('H2:H').protect().setDescription('Auto-managed Status');
   protection.setWarningOnly(true);
   
-  sheet.hideColumns(12); // Hide Raw URL payload column
-  
-  Logger.log('Trigger and Sheet auto-format applied successfully!');
+  Logger.log('Trigger and advanced attractive formatting applied successfully!');
 }
