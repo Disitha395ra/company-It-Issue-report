@@ -26,25 +26,31 @@ export default function FeedbackForm({ issue, onSubmit, submitting, error, succe
 
     return (
         <>
-            {/* Show the issue details behind the modal as a faded background via CSS */}
-            <div style={{ filter: 'blur(3px)', pointerEvents: 'none' }}>
-                <IssueStatus issue={issue} />
-            </div>
 
             {/* Modal Overlay / Popup */}
             <div className="feedback-overlay">
                 <div className="feedback-card" id="feedback-form">
                     <div className="feedback-header">
-                        <span className="feedback-header-icon">🎉</span>
-                        <h3>Task Finished!</h3>
+                        <span className="feedback-header-icon">
+                            {issue.status === 'Completed' ? '🎉' : 
+                             issue.status === 'Not Completed' ? '📝' : '🔍'}
+                        </span>
+                        <h3>
+                            {issue.status === 'Completed' ? 'Task Finished!' : 
+                             issue.status === 'Not Completed' ? 'Task Closed' : 'Administrator Responded'}
+                        </h3>
 
                         <div className="feedback-issue-summary">
                             <p className="feedback-issue-topic">Topic: {issue.issueType}</p>
-                            <p className="feedback-issue-status">Status: {issue.adminResolution || 'Completed'}</p>
+                            <p className="feedback-issue-status">Status: {issue.adminResolution}</p>
                             <p className="feedback-issue-desc">"{issue.description}"</p>
                         </div>
 
-                        <p className="feedback-prompt-text">Please take a moment to share your experience</p>
+                        <p className="feedback-prompt-text">
+                            {issue.status === 'In Progress' 
+                                ? 'Please reply with additional comments to help us investigate, or skip if none.'
+                                : 'Please take a moment to share your experience or confirm.'}
+                        </p>
                     </div>
 
                     <form className="feedback-body" onSubmit={handleSubmit} noValidate>

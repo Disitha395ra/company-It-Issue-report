@@ -191,7 +191,7 @@ export function useIssue() {
         clearMessages,
         hasActiveIssue: !!activeIssue,
         isCompleted: activeIssue?.status === 'Completed' || activeIssue?.status === 'Not Completed',
-        needsFeedback: (activeIssue?.status === 'Completed' || activeIssue?.status === 'Not Completed') && !activeIssue?.feedback,
+        needsFeedback: !!activeIssue?.adminResolution && !activeIssue?.feedback,
     };
 }
 

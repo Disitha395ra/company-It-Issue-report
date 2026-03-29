@@ -183,8 +183,8 @@ function submitFeedback(data) {
     if (String(rowData[1]).trim() !== String(data.empNo).trim()) return { success: false, message: 'Unauthorized' };
     
     const rowStatus = String(rowData[7]).trim().toLowerCase();
-    if (rowStatus !== 'completed' && rowStatus !== 'complete' && rowStatus !== 'not completed') {
-      return { success: false, message: 'Issue not completed' };
+    if (rowStatus !== 'completed' && rowStatus !== 'complete' && rowStatus !== 'not completed' && rowStatus !== 'in progress') {
+      return { success: false, message: 'Issue is not ready for feedback' };
     }
     
     sheet.getRange(rowIndex, 11).setValue(data.feedback);
@@ -272,12 +272,15 @@ function onEditTrigger(e) {
        if (val === 'Complete') {
           sheet.getRange(row, 8).setValue('Completed'); // Set Status
           sheet.getRange(row, 10).setValue(''); // Clear Queue Number
+          sheet.getRange(row, 11).setValue(''); // Clear feedback
        } else if (val === 'Not complete') {
           sheet.getRange(row, 8).setValue('Not Completed');
           sheet.getRange(row, 10).setValue('');
+          sheet.getRange(row, 11).setValue(''); // Clear feedback
        } else if (val === 'Need further investigation') {
           sheet.getRange(row, 8).setValue('In Progress');
           sheet.getRange(row, 10).setValue('');
+          sheet.getRange(row, 11).setValue(''); // Clear feedback
        }
      }
      recalculateQueueNumbers(sheet);

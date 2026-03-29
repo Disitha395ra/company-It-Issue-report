@@ -183,10 +183,12 @@ export default function DashboardPage() {
 
                                 {/* Right Column: Status + Queue + Profile Summary */}
                                 <div className="dashboard-right-col">
-                                    {hasActiveIssue && !isCompleted && (
+                                    {hasActiveIssue && (!isCompleted || needsFeedback) && (
                                         <>
-                                            <IssueStatus issue={activeIssue} />
-                                            <QueueDisplay queueInfo={queueInfo} issue={activeIssue} />
+                                            <div style={{ filter: needsFeedback ? 'blur(3px)' : 'none' }}>
+                                                <IssueStatus issue={activeIssue} />
+                                            </div>
+                                            {!isCompleted && <QueueDisplay queueInfo={queueInfo} issue={activeIssue} />}
                                         </>
                                     )}
 
