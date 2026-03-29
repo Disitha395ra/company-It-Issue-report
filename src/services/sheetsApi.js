@@ -36,10 +36,16 @@ class SheetsApiService {
     async _get(action, params = {}) {
         await this._checkConfig();
         try {
-            const queryParams = new URLSearchParams({ action, ...params });
+            // Add _t query param to bust aggressive browser cache of GET requests
+            const queryParams = new URLSearchParams({ 
+                action, 
+                ...params,
+                _t: Date.now().toString() 
+            });
             const response = await fetch(`${this.baseUrl}?${queryParams.toString()}`, {
                 method: 'GET',
                 redirect: 'follow',
+                cache: 'no-store'
             });
 
             if (!response.ok) {
