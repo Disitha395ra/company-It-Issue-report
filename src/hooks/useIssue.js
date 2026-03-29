@@ -49,10 +49,10 @@ export function useIssue() {
     }, [empNo]);
 
     // Fetch issue history
-    const fetchIssueHistory = useCallback(async () => {
+    const fetchIssueHistory = useCallback(async (isBackground = false) => {
         if (!empNo) return;
 
-        setHistoryLoading(true);
+        if (!isBackground) setHistoryLoading(true);
         try {
             const result = await sheetsApi.getIssueHistory(empNo);
             if (result.success && result.issues) {
@@ -65,25 +65,24 @@ export function useIssue() {
             // Don't fail hard — history is a "nice to have" view
             setIssueHistory([]);
         } finally {
-            setHistoryLoading(false);
+            if (!isBackground) setHistoryLoading(false);
         }
     }, [empNo]);
 
     // Combined fetch (active + queue + history)
     const refreshData = useCallback(async () => {
-        await Promise.all([fetchActiveIssue(), fetchQueueStatus(), fetchIssueHistory()]);
+        await Promise.all([fetchActiveIssue(), fetchQueueStatus(), fetchIssueHistory(true)]);
     }, [fetchActiveIssue, fetchQueueStatus, fetchIssueHistory]);
 
     // Initial fetch
     useEffect(() => {
         if (empNo) {
             setLoading(true);
-            Promise.all([refreshData(), fetchIssueHistory()])
-                .finally(() => setLoading(false));
+            refreshData().finally(() => setLoading(false));
         } else {
             setLoading(false);
         }
-    }, [empNo, refreshData, fetchIssueHistory]);
+    }, [empNo, refreshData]);
 
     // Polling active data
     useEffect(() => {
@@ -187,7 +186,7 @@ export function useIssue() {
         submitIssue,
         submitFeedback,
         refreshData,
-        refreshHistory: fetchIssueHistory,
+        refreshHistory: () => fetchIssueHistory(false),
         clearMessages,
         hasActiveIssue: !!activeIssue,
         isCompleted: activeIssue?.status === 'Completed' || activeIssue?.status === 'Not Completed',
