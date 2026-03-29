@@ -71,7 +71,7 @@ export default function IssueHistory({ issues, loading, onRefresh }) {
                     className={`history-filter-btn ${filter === 'completed' ? 'active' : ''}`}
                     onClick={() => setFilter('completed')}
                 >
-                    ✅ Resolved
+                    📁 Closed
                 </button>
                 <button
                     className={`history-filter-btn ${filter === 'pending' ? 'active' : ''}`}

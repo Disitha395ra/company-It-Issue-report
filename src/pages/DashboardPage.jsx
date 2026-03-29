@@ -150,7 +150,7 @@ export default function DashboardPage() {
                             <div className="dashboard-refresh-bar">
                                 <div className="refresh-info">
                                     <span className="refresh-dot"></span>
-                                    Auto-refreshing every 15 seconds
+                                    Synchronizing in real-time
                                 </div>
                                 <button
                                     className={`refresh-btn ${refreshing ? 'spinning' : ''}`}

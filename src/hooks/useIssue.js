@@ -69,10 +69,10 @@ export function useIssue() {
         }
     }, [empNo]);
 
-    // Combined fetch (active + queue)
+    // Combined fetch (active + queue + history)
     const refreshData = useCallback(async () => {
-        await Promise.all([fetchActiveIssue(), fetchQueueStatus()]);
-    }, [fetchActiveIssue, fetchQueueStatus]);
+        await Promise.all([fetchActiveIssue(), fetchQueueStatus(), fetchIssueHistory()]);
+    }, [fetchActiveIssue, fetchQueueStatus, fetchIssueHistory]);
 
     // Initial fetch
     useEffect(() => {
