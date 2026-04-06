@@ -1,5 +1,11 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
+import {
+    getAuth,
+    GoogleAuthProvider,
+    signInWithPopup,
+    signOut,
+    onAuthStateChanged,
+} from 'firebase/auth';
 
 const firebaseConfig = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "dummy",
@@ -11,6 +17,11 @@ const firebaseConfig = {
 };
 
 let app, auth;
+const googleProvider = new GoogleAuthProvider();
+
+// Force account selection every time
+googleProvider.setCustomParameters({ prompt: 'select_account' });
+
 try {
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);
@@ -18,5 +29,5 @@ try {
     console.error("Firebase initialization failed:", e);
 }
 
-export { auth, signInWithEmailAndPassword, signOut, onAuthStateChanged };
+export { auth, googleProvider, signInWithPopup, signOut, onAuthStateChanged };
 export default app;

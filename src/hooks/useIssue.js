@@ -16,14 +16,14 @@ export function useIssue() {
     const [success, setSuccess] = useState('');
     const pollRef = useRef(null);
 
-    const empNo = user?.empNo || '';
+    const userEmail = user?.email || '';
 
-    // Fetch active issue for user
+    // Fetch active issue for user (by email)
     const fetchActiveIssue = useCallback(async () => {
-        if (!empNo) return;
+        if (!userEmail) return;
 
         try {
-            const result = await sheetsApi.getActiveIssue(empNo);
+            const result = await sheetsApi.getActiveIssue(userEmail);
             if (result.success && result.issue) {
                 setActiveIssue(result.issue);
             } else {
@@ -32,29 +32,29 @@ export function useIssue() {
         } catch (err) {
             console.error('Error fetching active issue:', err);
         }
-    }, [empNo]);
+    }, [userEmail]);
 
     // Fetch queue status
     const fetchQueueStatus = useCallback(async () => {
-        if (!empNo) return;
+        if (!userEmail) return;
 
         try {
-            const result = await sheetsApi.getQueueStatus(empNo);
+            const result = await sheetsApi.getQueueStatus(userEmail);
             if (result.success) {
                 setQueueInfo(result);
             }
         } catch (err) {
             console.error('Error fetching queue:', err);
         }
-    }, [empNo]);
+    }, [userEmail]);
 
     // Fetch issue history
     const fetchIssueHistory = useCallback(async (isBackground = false) => {
-        if (!empNo) return;
+        if (!userEmail) return;
 
         if (!isBackground) setHistoryLoading(true);
         try {
-            const result = await sheetsApi.getIssueHistory(empNo);
+            const result = await sheetsApi.getIssueHistory(userEmail);
             if (result.success && result.issues) {
                 setIssueHistory(result.issues);
             } else {
@@ -62,31 +62,30 @@ export function useIssue() {
             }
         } catch (err) {
             console.error('Error fetching issue history:', err);
-            // Don't fail hard — history is a "nice to have" view
             setIssueHistory([]);
         } finally {
             if (!isBackground) setHistoryLoading(false);
         }
-    }, [empNo]);
+    }, [userEmail]);
 
-    // Combined fetch (active + queue + history)
+    // Combined fetch
     const refreshData = useCallback(async () => {
         await Promise.all([fetchActiveIssue(), fetchQueueStatus(), fetchIssueHistory(true)]);
     }, [fetchActiveIssue, fetchQueueStatus, fetchIssueHistory]);
 
     // Initial fetch
     useEffect(() => {
-        if (empNo) {
+        if (userEmail) {
             setLoading(true);
             refreshData().finally(() => setLoading(false));
         } else {
             setLoading(false);
         }
-    }, [empNo, refreshData]);
+    }, [userEmail, refreshData]);
 
     // Polling active data
     useEffect(() => {
-        if (empNo) {
+        if (userEmail) {
             pollRef.current = setInterval(refreshData, POLL_INTERVAL);
         }
 
@@ -95,7 +94,7 @@ export function useIssue() {
                 clearInterval(pollRef.current);
             }
         };
-    }, [empNo, refreshData]);
+    }, [userEmail, refreshData]);
 
     // Submit new issue
     const submitIssue = async ({ issueType, phone, description, screenshotUrl }) => {
@@ -105,18 +104,17 @@ export function useIssue() {
 
         try {
             const result = await sheetsApi.submitIssue({
-                empNo,
-                email: user?.email || '',
+                email: userEmail,
                 phone,
                 issueType,
                 description,
                 screenshotUrl,
+                displayName: user?.displayName || '',
             });
 
             if (result.success) {
                 setSuccess('Issue submitted successfully! Your queue number is ' + (result.queueNumber || 'assigned.'));
                 await refreshData();
-                // Refresh history as well after submitting
                 fetchIssueHistory();
                 return result;
             } else {
@@ -138,7 +136,7 @@ export function useIssue() {
 
         try {
             const result = await sheetsApi.submitFeedback({
-                empNo,
+                email: userEmail,
                 feedback,
                 rowIndex: activeIssue.rowIndex,
             });
@@ -147,7 +145,6 @@ export function useIssue() {
                 setSuccess('Thank you for your feedback!');
                 setActiveIssue(null);
                 await refreshData();
-                // Refresh history after feedback
                 fetchIssueHistory();
                 return result;
             } else {

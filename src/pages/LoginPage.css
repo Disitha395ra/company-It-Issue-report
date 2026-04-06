@@ -231,40 +231,72 @@
     animation: fadeInDown 0.2s ease-out;
 }
 
-.login-btn {
+/* Google Sign-In section */
+.login-google-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    margin-top: var(--space-6);
+}
+
+.login-google-btn {
     width: 100%;
-    height: 48px;
-    background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
-    color: white;
+    height: 52px;
+    background: var(--surface-primary);
+    color: var(--text-primary);
     font-size: var(--text-sm);
     font-weight: 600;
     border-radius: var(--radius-lg);
+    border: 2px solid var(--border-light);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--space-2);
+    gap: var(--space-3);
     transition: all var(--transition-base);
-    margin-top: var(--space-2);
-    box-shadow: var(--shadow-md), 0 0 20px rgba(99, 102, 241, 0.2);
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    letter-spacing: 0.01em;
 }
 
-.login-btn:hover:not(:disabled) {
+.login-google-btn:hover:not(:disabled) {
+    border-color: #4285F4;
+    box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.15), var(--shadow-md);
     transform: translateY(-2px);
-    box-shadow: var(--shadow-lg), 0 0 30px rgba(99, 102, 241, 0.3);
+    background: rgba(66, 133, 244, 0.04);
 }
 
-.login-btn:active:not(:disabled) {
+.login-google-btn:active:not(:disabled) {
     transform: translateY(0);
+    box-shadow: var(--shadow-sm);
 }
 
-.login-btn:disabled {
+.login-google-btn:disabled {
     opacity: 0.7;
     cursor: not-allowed;
 }
 
-.login-btn .spinner {
-    border-color: rgba(255, 255, 255, 0.3);
-    border-top-color: white;
+.login-google-btn .spinner {
+    border-color: rgba(99, 102, 241, 0.3);
+    border-top-color: var(--primary-500);
+}
+
+.google-icon {
+    flex-shrink: 0;
+}
+
+.login-domain-notice {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+    text-align: center;
+    line-height: 1.5;
+}
+
+.login-domain-notice strong {
+    color: var(--text-secondary);
 }
 
 .login-alert {

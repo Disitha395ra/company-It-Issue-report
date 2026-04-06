@@ -6,10 +6,11 @@ export default function UserProfile({ historyStats }) {
 
     if (!user) return null;
 
-    const displayName = user.email?.split('@')[0] || 'User';
+    const displayName = user.displayName || user.email?.split('@')[0] || 'User';
     const initials = displayName.charAt(0).toUpperCase();
     const domain = user.email?.split('@')[1] || '';
     const memberSince = new Date().getFullYear();
+    const photoURL = user.photoURL || null;
 
     return (
         <div className="profile-card" id="user-profile">
@@ -21,7 +22,10 @@ export default function UserProfile({ historyStats }) {
             {/* Avatar */}
             <div className="profile-avatar-wrapper">
                 <div className="profile-avatar">
-                    <span className="profile-avatar-text">{initials}</span>
+                    {photoURL
+                        ? <img src={photoURL} alt={displayName} className="profile-avatar-img" referrerPolicy="no-referrer" />
+                        : <span className="profile-avatar-text">{initials}</span>
+                    }
                 </div>
                 <div className="profile-status-indicator" title="Online"></div>
             </div>
@@ -52,13 +56,11 @@ export default function UserProfile({ historyStats }) {
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
                             <circle cx="9" cy="7" r="4" />
-                            <line x1="19" y1="8" x2="19" y2="14" />
-                            <line x1="22" y1="11" x2="16" y2="11" />
                         </svg>
                     </div>
                     <div className="profile-detail-content">
-                        <span className="profile-detail-label">Employee ID</span>
-                        <span className="profile-detail-value">EMP#{user.empNo}</span>
+                        <span className="profile-detail-label">Full Name</span>
+                        <span className="profile-detail-value">{displayName}</span>
                     </div>
                 </div>
 

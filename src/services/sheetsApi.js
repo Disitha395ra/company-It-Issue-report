@@ -11,36 +11,13 @@ class SheetsApiService {
         }
     }
 
-    async _request(action, data = {}) {
-        await this._checkConfig();
-        try {
-            const response = await fetch(this.baseUrl, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: {
-                    'Content-Type': 'text/plain',
-                },
-                body: JSON.stringify({ action, ...data }),
-            });
-
-            // With no-cors, we can't read the response
-            // So we'll use GET requests with query params for reads
-            // and POST for writes, then verify via GET
-            return { success: true };
-        } catch (error) {
-            console.error(`API Error [${action}]:`, error);
-            throw new Error(`Failed to ${action}: ${error.message}`);
-        }
-    }
-
     async _get(action, params = {}) {
         await this._checkConfig();
         try {
-            // Add _t query param to bust aggressive browser cache of GET requests
-            const queryParams = new URLSearchParams({ 
-                action, 
+            const queryParams = new URLSearchParams({
+                action,
                 ...params,
-                _t: Date.now().toString() 
+                _t: Date.now().toString()
             });
             const response = await fetch(`${this.baseUrl}?${queryParams.toString()}`, {
                 method: 'GET',
@@ -83,30 +60,30 @@ class SheetsApiService {
     /**
      * Submit a new issue to Google Sheet
      */
-    async submitIssue({ empNo, email, phone, issueType, description, screenshotUrl }) {
+    async submitIssue({ email, phone, issueType, description, screenshotUrl, displayName }) {
         return this._post('submitIssue', {
-            empNo,
             email,
             phone,
             issueType,
             description,
             screenshotUrl: screenshotUrl || '',
+            displayName: displayName || '',
         });
     }
 
     /**
-     * Get the active issue for a specific employee
+     * Get the active issue for a specific user (by email)
      */
-    async getActiveIssue(empNo) {
-        return this._get('getActiveIssue', { empNo });
+    async getActiveIssue(email) {
+        return this._get('getActiveIssue', { email });
     }
 
     /**
      * Submit feedback for a completed issue
      */
-    async submitFeedback({ empNo, feedback, rowIndex }) {
+    async submitFeedback({ email, feedback, rowIndex }) {
         return this._post('submitFeedback', {
-            empNo,
+            email,
             feedback,
             rowIndex,
         });
@@ -115,8 +92,8 @@ class SheetsApiService {
     /**
      * Get queue status for display
      */
-    async getQueueStatus(empNo) {
-        return this._get('getQueueStatus', { empNo });
+    async getQueueStatus(email) {
+        return this._get('getQueueStatus', { email });
     }
 
     /**
@@ -127,11 +104,10 @@ class SheetsApiService {
     }
 
     /**
-     * Get issue history for a specific employee
-     * Returns all past submitted issues (completed + feedback given)
+     * Get issue history for a specific user (by email)
      */
-    async getIssueHistory(empNo) {
-        return this._get('getIssueHistory', { empNo });
+    async getIssueHistory(email) {
+        return this._get('getIssueHistory', { email });
     }
 }
 

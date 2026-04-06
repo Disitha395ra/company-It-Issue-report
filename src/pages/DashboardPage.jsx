@@ -61,8 +61,8 @@ export default function DashboardPage() {
                 <div className="dashboard-container">
                     {/* Greeting */}
                     <div className="dashboard-greeting">
-                        <h2>{getGreeting()}, {user?.email?.split('@')[0] || 'User'} 👋</h2>
-                        <p>Employee #{user?.empNo} • Manage your IT support requests below</p>
+                        <h2>{getGreeting()}, {user?.displayName || user?.email?.split('@')[0] || 'User'} 👋</h2>
+                        <p>{user?.email} • Manage your IT support requests below</p>
                     </div>
 
                     {/* Navigation Tabs */}

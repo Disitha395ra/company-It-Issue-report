@@ -1,25 +1,36 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { auth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from '../services/firebase';
+import { auth, googleProvider, signInWithPopup, signOut, onAuthStateChanged } from '../services/firebase';
+
+const ALLOWED_DOMAIN = 'scot.lk';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
-    const [empNo, setEmpNo] = useState(localStorage.getItem('empNo') || '');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
             if (firebaseUser) {
-                setUser({
-                    uid: firebaseUser.uid,
-                    email: firebaseUser.email,
-                    empNo: localStorage.getItem('empNo') || '',
-                });
+                const email = firebaseUser.email || '';
+                const domain = email.split('@')[1];
+                if (domain !== ALLOWED_DOMAIN) {
+                    // Sign out unauthorized domain users immediately
+                    signOut(auth);
+                    setUser(null);
+                    setError(`Access denied. Only @${ALLOWED_DOMAIN} accounts are allowed.`);
+                } else {
+                    setUser({
+                        uid: firebaseUser.uid,
+                        email: email,
+                        displayName: firebaseUser.displayName || email.split('@')[0],
+                        photoURL: firebaseUser.photoURL || null,
+                    });
+                    setError('');
+                }
             } else {
                 setUser(null);
-                setEmpNo('');
             }
             setLoading(false);
         });
@@ -27,56 +38,41 @@ export function AuthProvider({ children }) {
         return () => unsubscribe();
     }, []);
 
-    const login = async (employeeNumber, email) => {
+    const loginWithGoogle = async () => {
         setError('');
         setLoading(true);
         try {
-            if (!auth) throw new Error("Firebase Auth is not configured.");
-            // Use Employee Number as password
-            const password = employeeNumber;
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            localStorage.setItem('empNo', employeeNumber);
-            setEmpNo(employeeNumber);
-            setUser({
-                uid: userCredential.user.uid,
-                email: userCredential.user.email,
-                empNo: employeeNumber,
-            });
-            return userCredential.user;
-        } catch (err) {
-            let message = 'Login failed. Please try again.';
-            switch (err.code) {
-                case 'auth/user-not-found':
-                    message = 'No account found with this email address.';
-                    break;
-                case 'auth/wrong-password':
-                    message = 'Incorrect password.';
-                    break;
-                case 'auth/invalid-email':
-                    message = 'Invalid email address format.';
-                    break;
-                case 'auth/too-many-requests':
-                    message = 'Too many failed attempts. Please try again later.';
-                    break;
-                case 'auth/invalid-credential':
-                    message = 'Invalid credentials. Please check your email and password.';
-                    break;
-                default:
-                    message = err.message || message;
+            if (!auth) throw new Error('Firebase Auth is not configured.');
+            const result = await signInWithPopup(auth, googleProvider);
+            const email = result.user.email || '';
+            const domain = email.split('@')[1];
+
+            if (domain !== ALLOWED_DOMAIN) {
+                await signOut(auth);
+                const msg = `Access denied. Only @${ALLOWED_DOMAIN} email accounts are permitted.`;
+                setError(msg);
+                setLoading(false);
+                throw new Error(msg);
             }
+
+            return result.user;
+        } catch (err) {
+            if (err.code === 'auth/popup-closed-by-user') {
+                // User cancelled — no error display
+                setLoading(false);
+                return;
+            }
+            const message = err.message || 'Google Sign-In failed. Please try again.';
             setError(message);
-            throw new Error(message);
-        } finally {
             setLoading(false);
+            throw new Error(message);
         }
     };
 
     const logout = async () => {
         try {
             await signOut(auth);
-            localStorage.removeItem('empNo');
             setUser(null);
-            setEmpNo('');
         } catch (err) {
             console.error('Logout error:', err);
         }
@@ -86,10 +82,9 @@ export function AuthProvider({ children }) {
 
     const value = {
         user,
-        empNo,
         loading,
         error,
-        login,
+        loginWithGoogle,
         logout,
         clearError,
         isAuthenticated: !!user,
