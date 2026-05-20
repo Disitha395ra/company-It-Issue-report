@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ======================================================
  * IT Support Portal - Google Apps Script Backend (V3)
  * - Uses Email as user identifier (Google Auth)
@@ -624,12 +624,12 @@ function sendQueuePositionUpdateEmail(data) {
   const isNext = data.newPosition === 1;
   
   const subject = isNext
-    ? '🔔 You''re Next! Our IT Team is Now On Your Case'
-    : '📊 Queue Update: You''re Now #' + data.newPosition + ' in Line';
+    ? '🔔 You\'re Next! Our IT Team is Now On Your Case'
+    : '📊 Queue Update: You\'re Now #' + data.newPosition + ' in Line';
   
   const badgeConfig = isNext ? {
     emoji: '🎯',
-    label: '#1 — You''re Next!',
+    label: '#1 — You\'re Next!',
     color: '#047857',
     bg: '#d1fae5',
     border: '#6ee7b7',
@@ -644,8 +644,8 @@ function sendQueuePositionUpdateEmail(data) {
   };
   
   const mainMessage = isNext
-    ? "Great news! You're now <strong>#1 in the queue</strong>. Our IT team is now actively looking into your problem. Please stay available — we will be with you very soon!`"
-    : "Your position in the IT support queue has been updated. You are now <strong>#${data.newPosition} in line</strong>. We're working through the queue as fast as we can — thank you for your patience!`";
+    ? `Great news! You're now <strong>#1 in the queue</strong>. Our IT team is now actively looking into your problem. Please stay available — we will be with you very soon!`
+    : `Your position in the IT support queue has been updated. You are now <strong>#${data.newPosition} in line</strong>. We're working through the queue as fast as we can — thank you for your patience!`;
   
   const ctaNote = isNext
     ? 'Our team is now actively working on your issue. You will receive a resolution update shortly.'
