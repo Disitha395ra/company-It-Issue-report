@@ -159,6 +159,7 @@ function getActiveIssue(email) {
 
 function findActiveIssue(sheet, email) {
   const data = sheet.getDataRange().getValues();
+  // Search from bottom up to find the user's LATEST issue
   for (let i = data.length - 1; i >= 1; i--) {
     const row = data[i];
     if (String(row[1]).trim().toLowerCase() === String(email).trim().toLowerCase()) {
@@ -180,24 +181,28 @@ function findActiveIssue(sheet, email) {
         status: originalStatus,
         adminResolution: adminRes,
         queueNumber: row[9],
-        feedback: feedback  // Return actual feedback value, not hardcoded ''
+        feedback: feedback
       };
       
+      // If status is pending, it's active
       if (statusLower === 'pending') {
         return payload;
       }
       
-      // For 'In Progress': return the issue so user can see status,
-      // but only if feedback hasn't been submitted yet
-      if (statusLower === 'in progress' && !feedback) {
+      // If status is in progress, it's active (whether they gave feedback or not)
+      if (statusLower === 'in progress') {
         return payload;
       }
       
-      // For 'Completed' / 'Not Completed': show only if feedback not yet submitted
+      // If completed but NO feedback provided, it's active (we need their feedback)
       if ((statusLower === 'completed' || statusLower === 'complete' || statusLower === 'not completed') && !feedback) {
         payload.status = originalStatus === 'Not Completed' ? 'Not Completed' : 'Completed';
         return payload;
       }
+      
+      // If we reach here, their latest issue is fully resolved (Completed WITH feedback).
+      // So they have NO active issues. Stop searching older history.
+      return null;
     }
   }
   return null;
