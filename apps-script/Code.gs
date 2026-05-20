@@ -209,11 +209,51 @@ function calculateQueueNumber(sheet) {
 
 function recalculateQueueNumbers(sheet) {
   const data = sheet.getDataRange().getValues();
+  
+  // Step 1: Capture old queue positions before recalculating
+  const oldPositions = {};
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][7]).trim().toLowerCase() === 'pending') {
+      const emailKey = String(data[i][1]).trim().toLowerCase();
+      oldPositions[emailKey] = {
+        queueNumber: Number(data[i][9]),
+        originalEmail: String(data[i][1]).trim(),
+        displayName: String(data[i][2]).trim(),
+        issueType: String(data[i][4]).trim()
+      };
+    }
+  }
+  
+  // Step 2: Recalculate queue numbers
   let queueNum = 1;
   for (let i = 1; i < data.length; i++) {
     if (String(data[i][7]).trim().toLowerCase() === 'pending') {
       sheet.getRange(i + 1, 10).setValue(queueNum);
       queueNum++;
+    }
+  }
+  
+  // Step 3: Re-read and send emails to users whose position changed
+  const newData = sheet.getDataRange().getValues();
+  for (let i = 1; i < newData.length; i++) {
+    if (String(newData[i][7]).trim().toLowerCase() === 'pending') {
+      const emailKey = String(newData[i][1]).trim().toLowerCase();
+      const newPos = Number(newData[i][9]);
+      const oldInfo = oldPositions[emailKey];
+      
+      // Only send email if position actually changed
+      if (oldInfo && newPos !== oldInfo.queueNumber) {
+        try {
+          sendQueuePositionUpdateEmail({
+            email: oldInfo.originalEmail,
+            displayName: oldInfo.displayName || oldInfo.originalEmail.split('@')[0],
+            issueType: oldInfo.issueType,
+            newPosition: newPos
+          });
+        } catch (emailErr) {
+          Logger.log("Queue position email error: " + emailErr.toString());
+        }
+      }
     }
   }
 }
@@ -553,6 +593,100 @@ function sendStatusUpdateEmail(data) {
 </body>
 </html>`;
 
+  MailApp.sendEmail({
+    to: data.email,
+    cc: 'it@scot.lk',
+    subject: subject,
+    htmlBody: htmlBody,
+  });
+}
+
+/**
+ * Sends a queue position update email when a user's place in queue changes.
+ */
+function sendQueuePositionUpdateEmail(data) {
+  const isNext = data.newPosition === 1;
+  
+  const subject = isNext
+    ? '🔔 You\'re Next! Our IT Team is Now On Your Case'
+    : '📊 Queue Update: You\'re Now #' + data.newPosition + ' in Line';
+  
+  const badgeConfig = isNext ? {
+    emoji: '🎯',
+    label: '#1 — You\'re Next!',
+    color: '#047857',
+    bg: '#d1fae5',
+    border: '#6ee7b7',
+    headerSub: 'You\'re Next in Queue!'
+  } : {
+    emoji: '📋',
+    label: '#' + data.newPosition + ' in Queue',
+    color: '#1d4ed8',
+    bg: '#dbeafe',
+    border: '#93c5fd',
+    headerSub: 'Queue Position Updated'
+  };
+  
+  const mainMessage = isNext
+    ? `Great news! You're now <strong>#1 in the queue</strong>. Our IT team is now actively looking into your problem. Please stay available — we will be with you very soon!`
+    : `Your position in the IT support queue has been updated. You are now <strong>#${data.newPosition} in line</strong>. We're working through the queue as fast as we can — thank you for your patience!`;
+  
+  const ctaNote = isNext
+    ? 'Our team is now actively working on your issue. You will receive a resolution update shortly.'
+    : 'We will notify you again as your position gets closer to the front of the queue.';
+  
+  const htmlBody = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f8fafc;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;padding:32px 16px;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+        
+        <!-- Header -->
+        <tr><td style="background:linear-gradient(135deg,#4f46e5,#7c3aed);padding:32px;text-align:center;">
+          <div style="font-size:40px;margin-bottom:12px;">🛠️</div>
+          <h1 style="color:#ffffff;margin:0;font-size:22px;font-weight:700;letter-spacing:-0.02em;">IT Support Portal</h1>
+          <p style="color:rgba(255,255,255,0.8);margin:8px 0 0;font-size:14px;">${badgeConfig.headerSub}</p>
+        </td></tr>
+        
+        <!-- Body -->
+        <tr><td style="padding:32px;">
+          <p style="color:#374151;font-size:16px;margin:0 0 20px;">Hi <strong>${data.displayName}</strong>,</p>
+          <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 28px;">${mainMessage}</p>
+          
+          <!-- Queue Badge -->
+          <div style="text-align:center;margin:0 0 28px;">
+            <div style="display:inline-block;background:${badgeConfig.bg};border:2px solid ${badgeConfig.border};border-radius:16px;padding:24px 48px;">
+              <div style="font-size:44px;margin-bottom:8px;">${badgeConfig.emoji}</div>
+              <div style="color:${badgeConfig.color};font-size:22px;font-weight:800;">${badgeConfig.label}</div>
+              ${isNext ? `<div style="color:${badgeConfig.color};font-size:13px;margin-top:8px;font-weight:600;background:rgba(4,120,87,0.1);padding:4px 12px;border-radius:20px;">Now looking into your problem</div>` : ''}
+            </div>
+          </div>
+          
+          <!-- Issue Info Box -->
+          <div style="background:#f3f4f6;border-radius:12px;padding:16px 20px;margin-bottom:24px;border-left:4px solid ${badgeConfig.color};">
+            <p style="margin:0;color:#374151;font-size:14px;"><strong>Your Issue:</strong> ${data.issueType}</p>
+          </div>
+          
+          <p style="color:#6b7280;font-size:14px;line-height:1.6;margin:0;">${ctaNote}</p>
+        </td></tr>
+        
+        <!-- Footer -->
+        <tr><td style="background:#f9fafb;padding:20px 32px;border-top:1px solid #e5e7eb;text-align:center;">
+          <p style="color:#9ca3af;font-size:12px;margin:0;">
+            This is an automated notification from the IT Support Portal.<br>
+            Please do not reply to this email.
+          </p>
+        </td></tr>
+        
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+  
   MailApp.sendEmail({
     to: data.email,
     cc: 'it@scot.lk',
