@@ -14,6 +14,7 @@ export function useIssue() {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [feedbackSubmitted, setFeedbackSubmitted] = useState(false); // blocks panel after submission
     const pollRef = useRef(null);
 
     const userEmail = user?.email || '';
@@ -26,8 +27,13 @@ export function useIssue() {
             const result = await sheetsApi.getActiveIssue(userEmail);
             if (result.success && result.issue) {
                 setActiveIssue(result.issue);
+                // If sheet now has feedback saved, clear the submitted flag
+                if (result.issue.feedback) {
+                    setFeedbackSubmitted(false);
+                }
             } else {
                 setActiveIssue(null);
+                setFeedbackSubmitted(false); // Reset when no active issue
             }
         } catch (err) {
             console.error('Error fetching active issue:', err);
@@ -142,6 +148,9 @@ export function useIssue() {
             });
 
             if (result.success) {
+                // Immediately block the feedback panel BEFORE re-fetching
+                // to prevent race condition where sheet hasn't updated yet
+                setFeedbackSubmitted(true);
                 setSuccess('Thank you for your feedback!');
                 setActiveIssue(null);
                 await refreshData();
@@ -187,7 +196,8 @@ export function useIssue() {
         clearMessages,
         hasActiveIssue: !!activeIssue,
         isCompleted: activeIssue?.status === 'Completed' || activeIssue?.status === 'Not Completed',
-        needsFeedback: !!activeIssue?.adminResolution && !activeIssue?.feedback,
+        // Block panel if: feedback was just submitted (sheet update race condition guard)
+        needsFeedback: !!activeIssue?.adminResolution && !activeIssue?.feedback && !feedbackSubmitted,
     };
 }
 
