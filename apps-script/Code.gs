@@ -736,7 +736,6 @@ function setupTrigger() {
        .setFontColor('#ffffff')
        .setVerticalAlignment('middle')
        .setHorizontalAlignment('center');
-       
   sheet.setRowHeight(1, 40);
   sheet.setFrozenRows(1);
   
@@ -799,10 +798,38 @@ function setupTrigger() {
     .build();
     
   sheet.setConditionalFormatRules([rulePending, ruleCompleted, ruleNotCompleted, ruleInProgress]);
-  
   // Protect Status column
   const protection = sheet.getRange('H2:H').protect().setDescription('Auto-managed Status');
   protection.setWarningOnly(true);
   
   Logger.log('Trigger, formatting, and email notifications configured successfully!');
+}
+
+/**
+ * Run this if rows or columns are hidden, or if the sheet looks broken.
+ */
+function fixMySheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet) return;
+
+  // 1. Unhide all columns (1 to 12)
+  sheet.showColumns(1, 12);
+  
+  // 2. Unhide all rows
+  sheet.showRows(1, sheet.getMaxRows());
+  
+  // 3. Remove any active filters that might be hiding rows
+  if (sheet.getFilter()) {
+    sheet.getFilter().remove();
+  }
+  
+  // 4. Reset row heights to be visible
+  sheet.setRowHeights(2, sheet.getMaxRows() - 1, 40);
+  
+  // 5. Hide only column 12 again
+  sheet.hideColumns(12);
+  
+  // 6. Alert the admin
+  SpreadsheetApp.getUi().alert("Sheet fixed! All rows and columns are now visible. If you have an old invalid issue stuck on row 2, you can now right-click the row number and click 'Delete row'.");
 }
