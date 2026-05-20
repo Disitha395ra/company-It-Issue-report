@@ -438,7 +438,7 @@ function sendSubmissionConfirmationEmail(data) {
 
   MailApp.sendEmail({
     to: data.email,
-    cc: 'disitha@scot.lk',
+    cc: 'it@scot.lk',
     subject: subject,
     htmlBody: htmlBody,
   });
@@ -555,7 +555,7 @@ function sendStatusUpdateEmail(data) {
 
   MailApp.sendEmail({
     to: data.email,
-    cc: 'disitha@scot.lk',
+    cc: 'it@scot.lk',
     subject: subject,
     htmlBody: htmlBody,
   });
