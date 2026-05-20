@@ -180,13 +180,20 @@ function findActiveIssue(sheet, email) {
         status: originalStatus,
         adminResolution: adminRes,
         queueNumber: row[9],
-        feedback: ''
+        feedback: feedback  // Return actual feedback value, not hardcoded ''
       };
       
-      if (statusLower === 'pending' || statusLower === 'in progress') {
-        payload.status = originalStatus;
+      if (statusLower === 'pending') {
         return payload;
       }
+      
+      // For 'In Progress': return the issue so user can see status,
+      // but only if feedback hasn't been submitted yet
+      if (statusLower === 'in progress' && !feedback) {
+        return payload;
+      }
+      
+      // For 'Completed' / 'Not Completed': show only if feedback not yet submitted
       if ((statusLower === 'completed' || statusLower === 'complete' || statusLower === 'not completed') && !feedback) {
         payload.status = originalStatus === 'Not Completed' ? 'Not Completed' : 'Completed';
         return payload;
