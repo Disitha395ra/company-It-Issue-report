@@ -177,7 +177,8 @@ export default function DashboardPage() {
                                         error={error}
                                         success={success}
                                         clearMessages={clearMessages}
-                                        hasActiveIssue={hasActiveIssue}
+                                        // Only block the form if there is an active issue that is NOT completed
+                                        hasActiveIssue={hasActiveIssue && !isCompleted}
                                     />
                                 </div>
 

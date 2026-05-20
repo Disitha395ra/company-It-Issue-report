@@ -91,8 +91,10 @@ function submitIssue(data) {
   try {
     lock.waitLock(10000);
     
-    if (findActiveIssue(sheet, data.email)) {
-      return { success: false, message: 'You already have an active issue.' };
+    // Check if user has a pending or in-progress issue
+    const active = findActiveIssue(sheet, data.email);
+    if (active && active.status.toLowerCase() !== 'completed' && active.status.toLowerCase() !== 'not completed') {
+      return { success: false, message: 'You already have an active issue in progress. Please wait for it to be resolved.' };
     }
     
     const queueNumber = calculateQueueNumber(sheet);
