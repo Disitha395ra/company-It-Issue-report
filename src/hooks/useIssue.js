@@ -2,8 +2,6 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import sheetsApi from '../services/sheetsApi';
 import { useAuth } from '../contexts/AuthContext';
 
-const POLL_INTERVAL = 3000;
-
 // ─── SessionStorage helpers ──────────────────────────────────────────────────
 // Persists feedback-submitted state across page refreshes (within the same session).
 // Keyed by the sheet rowIndex so different issues don't interfere.
@@ -118,16 +116,19 @@ export function useIssue() {
         }
     }, [userEmail, refreshData]);
 
-    // Polling every 3 seconds
+    // Adaptive Polling: 15s if active issue, 30s if idle
+    // This prevents hitting the Google Apps Script 'Simultaneous Executions' quota with 100+ users
+    const hasActive = !!activeIssue;
     useEffect(() => {
         if (userEmail) {
-            pollRef.current = setInterval(refreshData, POLL_INTERVAL);
+            const currentInterval = hasActive ? 15000 : 30000;
+            pollRef.current = setInterval(refreshData, currentInterval);
         }
 
         return () => {
             if (pollRef.current) clearInterval(pollRef.current);
         };
-    }, [userEmail, refreshData]);
+    }, [userEmail, hasActive, refreshData]);
 
     // Submit new issue
     const submitIssue = async ({ issueType, phone, description, screenshotUrl }) => {

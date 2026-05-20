@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ======================================================
  * IT Support Portal - Google Apps Script Backend (V3)
  * - Uses Email as user identifier (Google Auth)
@@ -89,7 +89,7 @@ function submitIssue(data) {
   const lock = LockService.getScriptLock();
   
   try {
-    lock.waitLock(10000);
+    lock.waitLock(28000);
     
     // Check if user has a pending or in-progress issue
     const active = findActiveIssue(sheet, data.email);
@@ -126,7 +126,7 @@ function submitIssue(data) {
     const newRow = sheet.getLastRow();
     if (imageFormula !== '') {
       sheet.setRowHeight(newRow, 120);
-      sheet.setColumnWidth(7, 120);
+      
     }
     
     // Send confirmation email to user
@@ -249,7 +249,9 @@ function recalculateQueueNumbers(sheet) {
   
   // Step 3: Re-read and send emails to users whose position changed
   const newData = sheet.getDataRange().getValues();
+  const startTime = Date.now();
   for (let i = 1; i < newData.length; i++) {
+    if (Date.now() - startTime > 15000) break;
     if (String(newData[i][7]).trim().toLowerCase() === 'pending') {
       const emailKey = String(newData[i][1]).trim().toLowerCase();
       const newPos = Number(newData[i][9]);
@@ -302,7 +304,7 @@ function submitFeedback(data) {
   const sheet = getSheet();
   const lock = LockService.getScriptLock();
   try {
-    lock.waitLock(10000);
+    lock.waitLock(28000);
     const rowIndex = parseInt(data.rowIndex);
     if (!rowIndex || rowIndex < 2) return { success: false, message: 'Invalid row reference' };
     
@@ -421,7 +423,7 @@ function onEditTrigger(e) {
  * Sends a confirmation email to the user when they submit an issue.
  */
 function sendSubmissionConfirmationEmail(data) {
-  const subject = '✅ IT Support Request Received - ' + data.issueType;
+  const subject = 'âœ… IT Support Request Received - ' + data.issueType;
   
   const screenshotSection = data.screenshotUrl
     ? '<p style="margin:8px 0;"><strong>Screenshot:</strong> <a href="' + data.screenshotUrl + '" style="color:#4f46e5;">View Screenshot</a></p>'
@@ -438,7 +440,7 @@ function sendSubmissionConfirmationEmail(data) {
         
         <!-- Header -->
         <tr><td style="background:linear-gradient(135deg,#4f46e5,#7c3aed);padding:32px;text-align:center;">
-          <div style="font-size:40px;margin-bottom:12px;">🛠️</div>
+          <div style="font-size:40px;margin-bottom:12px;">ðŸ› ï¸</div>
           <h1 style="color:#ffffff;margin:0;font-size:22px;font-weight:700;letter-spacing:-0.02em;">IT Support Portal</h1>
           <p style="color:rgba(255,255,255,0.8);margin:8px 0 0;font-size:14px;">Issue Submitted Successfully</p>
         </td></tr>
@@ -452,7 +454,7 @@ function sendSubmissionConfirmationEmail(data) {
           
           <!-- Issue Details Box -->
           <div style="background:#f3f4f6;border-radius:12px;padding:20px;margin-bottom:24px;border-left:4px solid #4f46e5;">
-            <h2 style="color:#1f2937;font-size:16px;margin:0 0 16px;font-weight:700;">📋 Issue Details</h2>
+            <h2 style="color:#1f2937;font-size:16px;margin:0 0 16px;font-weight:700;">ðŸ“‹ Issue Details</h2>
             <p style="margin:8px 0;color:#374151;font-size:14px;"><strong>Issue Type:</strong> ${data.issueType}</p>
             <p style="margin:8px 0;color:#374151;font-size:14px;"><strong>Queue Number:</strong> #${data.queueNumber}</p>
             <p style="margin:8px 0;color:#374151;font-size:14px;"><strong>Submitted At:</strong> ${new Date(data.timestamp).toLocaleString('en-US', {dateStyle:'long', timeStyle:'short'})}</p>
@@ -467,7 +469,7 @@ function sendSubmissionConfirmationEmail(data) {
           <!-- Status Badge -->
           <div style="text-align:center;margin-bottom:24px;">
             <span style="display:inline-block;background:#fef3c7;color:#b45309;font-size:13px;font-weight:600;padding:6px 16px;border-radius:20px;border:1px solid #fde68a;">
-              ⏳ Status: Pending
+              â³ Status: Pending
             </span>
           </div>
           
@@ -504,7 +506,7 @@ function sendSubmissionConfirmationEmail(data) {
 function sendStatusUpdateEmail(data) {
   const statusConfig = {
     'Completed': {
-      emoji: '✅',
+      emoji: 'âœ…',
       label: 'Completed',
       color: '#047857',
       bg: '#d1fae5',
@@ -512,7 +514,7 @@ function sendStatusUpdateEmail(data) {
       message: 'Great news! Your IT support issue has been resolved. If you continue to experience problems, feel free to submit a new request.'
     },
     'Not Completed': {
-      emoji: '❌',
+      emoji: 'âŒ',
       label: 'Not Completed',
       color: '#b91c1c',
       bg: '#fee2e2',
@@ -520,7 +522,7 @@ function sendStatusUpdateEmail(data) {
       message: 'Our IT team has reviewed your issue. Unfortunately, it could not be completed at this time. You may submit a new request with more details if needed.'
     },
     'In Progress': {
-      emoji: '🔍',
+      emoji: 'ðŸ”',
       label: 'Under Investigation',
       color: '#1d4ed8',
       bg: '#dbeafe',
@@ -530,10 +532,10 @@ function sendStatusUpdateEmail(data) {
   };
   
   const config = statusConfig[data.status] || {
-    emoji: 'ℹ️', label: data.status, color: '#374151', bg: '#f3f4f6', border: '#d1d5db', message: 'Your issue status has been updated.'
+    emoji: 'â„¹ï¸', label: data.status, color: '#374151', bg: '#f3f4f6', border: '#d1d5db', message: 'Your issue status has been updated.'
   };
   
-  const subject = config.emoji + ' IT Support Update: ' + data.issueType + ' → ' + config.label;
+  const subject = config.emoji + ' IT Support Update: ' + data.issueType + ' â†’ ' + config.label;
   
   const screenshotSection = data.screenshotUrl
     ? '<p style="margin:8px 0;color:#374151;font-size:14px;"><strong>Screenshot:</strong> <a href="' + data.screenshotUrl + '" style="color:#4f46e5;">View Screenshot</a></p>'
@@ -557,7 +559,7 @@ function sendStatusUpdateEmail(data) {
         
         <!-- Header -->
         <tr><td style="background:linear-gradient(135deg,#4f46e5,#7c3aed);padding:32px;text-align:center;">
-          <div style="font-size:40px;margin-bottom:12px;">🛠️</div>
+          <div style="font-size:40px;margin-bottom:12px;">ðŸ› ï¸</div>
           <h1 style="color:#ffffff;margin:0;font-size:22px;font-weight:700;letter-spacing:-0.02em;">IT Support Portal</h1>
           <p style="color:rgba(255,255,255,0.8);margin:8px 0 0;font-size:14px;">Issue Status Update</p>
         </td></tr>
@@ -578,7 +580,7 @@ function sendStatusUpdateEmail(data) {
           
           <!-- Issue Details Box -->
           <div style="background:#f3f4f6;border-radius:12px;padding:20px;margin-bottom:24px;border-left:4px solid ${config.color};">
-            <h2 style="color:#1f2937;font-size:16px;margin:0 0 16px;font-weight:700;">📋 Issue Summary</h2>
+            <h2 style="color:#1f2937;font-size:16px;margin:0 0 16px;font-weight:700;">ðŸ“‹ Issue Summary</h2>
             <p style="margin:8px 0;color:#374151;font-size:14px;"><strong>Issue Type:</strong> ${data.issueType}</p>
             ${screenshotSection}
             <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;">
@@ -622,18 +624,18 @@ function sendQueuePositionUpdateEmail(data) {
   const isNext = data.newPosition === 1;
   
   const subject = isNext
-    ? '🔔 You\'re Next! Our IT Team is Now On Your Case'
-    : '📊 Queue Update: You\'re Now #' + data.newPosition + ' in Line';
+    ? 'ðŸ”” You\'re Next! Our IT Team is Now On Your Case'
+    : 'ðŸ“Š Queue Update: You\'re Now #' + data.newPosition + ' in Line';
   
   const badgeConfig = isNext ? {
-    emoji: '🎯',
-    label: '#1 — You\'re Next!',
+    emoji: 'ðŸŽ¯',
+    label: '#1 â€” You\'re Next!',
     color: '#047857',
     bg: '#d1fae5',
     border: '#6ee7b7',
     headerSub: 'You\'re Next in Queue!'
   } : {
-    emoji: '📋',
+    emoji: 'ðŸ“‹',
     label: '#' + data.newPosition + ' in Queue',
     color: '#1d4ed8',
     bg: '#dbeafe',
@@ -642,8 +644,8 @@ function sendQueuePositionUpdateEmail(data) {
   };
   
   const mainMessage = isNext
-    ? `Great news! You're now <strong>#1 in the queue</strong>. Our IT team is now actively looking into your problem. Please stay available — we will be with you very soon!`
-    : `Your position in the IT support queue has been updated. You are now <strong>#${data.newPosition} in line</strong>. We're working through the queue as fast as we can — thank you for your patience!`;
+    ? `Great news! You're now <strong>#1 in the queue</strong>. Our IT team is now actively looking into your problem. Please stay available â€” we will be with you very soon!`
+    : `Your position in the IT support queue has been updated. You are now <strong>#${data.newPosition} in line</strong>. We're working through the queue as fast as we can â€” thank you for your patience!`;
   
   const ctaNote = isNext
     ? 'Our team is now actively working on your issue. You will receive a resolution update shortly.'
@@ -660,7 +662,7 @@ function sendQueuePositionUpdateEmail(data) {
         
         <!-- Header -->
         <tr><td style="background:linear-gradient(135deg,#4f46e5,#7c3aed);padding:32px;text-align:center;">
-          <div style="font-size:40px;margin-bottom:12px;">🛠️</div>
+          <div style="font-size:40px;margin-bottom:12px;">ðŸ› ï¸</div>
           <h1 style="color:#ffffff;margin:0;font-size:22px;font-weight:700;letter-spacing:-0.02em;">IT Support Portal</h1>
           <p style="color:rgba(255,255,255,0.8);margin:8px 0 0;font-size:14px;">${badgeConfig.headerSub}</p>
         </td></tr>
@@ -835,3 +837,7 @@ function fixMySheet() {
   // 6. Alert the admin
   SpreadsheetApp.getUi().alert("Sheet fixed! All rows and columns are now visible. If you have an old invalid issue stuck on row 2, you can now right-click the row number and click 'Delete row'.");
 }
+
+
+
+
