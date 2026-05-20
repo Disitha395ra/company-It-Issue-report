@@ -841,3 +841,27 @@ function fixMySheet() {
 
 
 
+
+/**
+ * CAUTION: Run this function to DELETE ALL data from the sheet.
+ * It will keep the header row intact but remove everything else.
+ */
+function clearAllData() {
+  const ui = SpreadsheetApp.getUi();
+  const response = ui.alert('WARNING: Clear All Data', 'Are you sure you want to delete all issue records? This cannot be undone.', ui.ButtonSet.YES_NO);
+  
+  if (response === ui.Button.YES) {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(SHEET_NAME);
+    if (!sheet) return;
+    
+    const lastRow = sheet.getLastRow();
+    if (lastRow > 1) {
+      // Delete all rows from row 2 downwards
+      sheet.deleteRows(2, lastRow - 1);
+      ui.alert('Success', 'All data has been cleared.', ui.ButtonSet.OK);
+    } else {
+      ui.alert('Info', 'The sheet is already empty.', ui.ButtonSet.OK);
+    }
+  }
+}
