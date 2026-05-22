@@ -455,6 +455,8 @@ function sendSubmissionConfirmationEmail(data) {
           <!-- Issue Details Box -->
           <div style="background:#f3f4f6;border-radius:12px;padding:20px;margin-bottom:24px;border-left:4px solid #4f46e5;">
             <h2 style="color:#1f2937;font-size:16px;margin:0 0 16px;font-weight:700;">📋 Issue Details</h2>
+            <p style="margin:8px 0;color:#374151;font-size:14px;"><strong>Employee Name:</strong> ${data.displayName}</p>
+            <p style="margin:8px 0;color:#374151;font-size:14px;"><strong>Employee Email:</strong> ${data.email}</p>
             <p style="margin:8px 0;color:#374151;font-size:14px;"><strong>Issue Type:</strong> ${data.issueType}</p>
             <p style="margin:8px 0;color:#374151;font-size:14px;"><strong>Queue Number:</strong> #${data.queueNumber}</p>
             <p style="margin:8px 0;color:#374151;font-size:14px;"><strong>Submitted At:</strong> ${new Date(data.timestamp).toLocaleString('en-US', {dateStyle:'long', timeStyle:'short'})}</p>
@@ -492,9 +494,15 @@ function sendSubmissionConfirmationEmail(data) {
 </body>
 </html>`;
 
+  let ccEmails = 'it@scot.lk';
+  const supervisorEmail = getSupervisorEmail(data.email);
+  if (supervisorEmail) {
+    ccEmails += ',' + supervisorEmail;
+  }
+
   MailApp.sendEmail({
     to: data.email,
-    cc: 'it@scot.lk',
+    cc: ccEmails,
     subject: subject,
     htmlBody: htmlBody,
   });
@@ -581,6 +589,8 @@ function sendStatusUpdateEmail(data) {
           <!-- Issue Details Box -->
           <div style="background:#f3f4f6;border-radius:12px;padding:20px;margin-bottom:24px;border-left:4px solid ${config.color};">
             <h2 style="color:#1f2937;font-size:16px;margin:0 0 16px;font-weight:700;">📋 Issue Summary</h2>
+            <p style="margin:8px 0;color:#374151;font-size:14px;"><strong>Employee Name:</strong> ${data.displayName}</p>
+            <p style="margin:8px 0;color:#374151;font-size:14px;"><strong>Employee Email:</strong> ${data.email}</p>
             <p style="margin:8px 0;color:#374151;font-size:14px;"><strong>Issue Type:</strong> ${data.issueType}</p>
             ${screenshotSection}
             <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;">
@@ -609,9 +619,15 @@ function sendStatusUpdateEmail(data) {
 </body>
 </html>`;
 
+  let ccEmails = 'it@scot.lk';
+  const supervisorEmail = getSupervisorEmail(data.email);
+  if (supervisorEmail) {
+    ccEmails += ',' + supervisorEmail;
+  }
+
   MailApp.sendEmail({
     to: data.email,
-    cc: 'it@scot.lk',
+    cc: ccEmails,
     subject: subject,
     htmlBody: htmlBody,
   });
@@ -709,6 +725,25 @@ function sendQueuePositionUpdateEmail(data) {
     subject: subject,
     htmlBody: htmlBody,
   });
+}
+
+/**
+ * Retrieves the supervisor email from the "Supervisors" sheet.
+ */
+function getSupervisorEmail(userEmail) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Supervisors');
+  if (!sheet) return null;
+  
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    const emailKey = String(data[i][0]).trim().toLowerCase();
+    if (emailKey === String(userEmail).trim().toLowerCase()) {
+      const supervisorEmail = String(data[i][1]).trim();
+      if (supervisorEmail) return supervisorEmail;
+    }
+  }
+  return null;
 }
 
 // ===== SETUP =====
