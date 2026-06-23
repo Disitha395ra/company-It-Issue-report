@@ -114,10 +114,12 @@ function submitIssue(data) {
   const lock = LockService.getScriptLock();
   
   try {
-    lock.waitLock(10000);
+    lock.waitLock(28000);
     
-    if (findActiveIssue(sheet, data.email)) {
-      return { success: false, message: 'You already have an active issue.' };
+    // Check if user has a pending or in-progress issue
+    const active = findActiveIssue(sheet, data.email);
+    if (active && active.status.toLowerCase() !== 'completed' && active.status.toLowerCase() !== 'not completed') {
+      return { success: false, message: 'You already have an active issue in progress. Please wait for it to be resolved.' };
     }
     
     const queueNumber = calculateQueueNumber(sheet);
@@ -149,7 +151,7 @@ function submitIssue(data) {
     const newRow = sheet.getLastRow();
     if (imageFormula !== '') {
       sheet.setRowHeight(newRow, 120);
-      sheet.setColumnWidth(7, 120);
+      
     }
     
     // Send confirmation email to user
@@ -184,6 +186,7 @@ function getActiveIssue(email) {
 
 function findActiveIssue(sheet, email) {
   const data = sheet.getDataRange().getValues();
+  // Search from bottom up to find the user's LATEST issue
   for (let i = data.length - 1; i >= 1; i--) {
     const row = data[i];
     if (String(row[1]).trim().toLowerCase() === String(email).trim().toLowerCase()) {
@@ -205,17 +208,28 @@ function findActiveIssue(sheet, email) {
         status: originalStatus,
         adminResolution: adminRes,
         queueNumber: row[9],
-        feedback: ''
+        feedback: feedback
       };
       
-      if (statusLower === 'pending' || statusLower === 'in progress') {
-        payload.status = originalStatus;
+      // If status is pending, it's active
+      if (statusLower === 'pending') {
         return payload;
       }
+      
+      // If status is in progress, it's active (whether they gave feedback or not)
+      if (statusLower === 'in progress') {
+        return payload;
+      }
+      
+      // If completed but NO feedback provided, it's active (we need their feedback)
       if ((statusLower === 'completed' || statusLower === 'complete' || statusLower === 'not completed') && !feedback) {
         payload.status = originalStatus === 'Not Completed' ? 'Not Completed' : 'Completed';
         return payload;
       }
+      
+      // If we reach here, their latest issue is fully resolved (Completed WITH feedback).
+      // So they have NO active issues. Stop searching older history.
+      return null;
     }
   }
   return null;
@@ -234,11 +248,53 @@ function calculateQueueNumber(sheet) {
 
 function recalculateQueueNumbers(sheet) {
   const data = sheet.getDataRange().getValues();
+  
+  // Step 1: Capture old queue positions before recalculating
+  const oldPositions = {};
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][7]).trim().toLowerCase() === 'pending') {
+      const emailKey = String(data[i][1]).trim().toLowerCase();
+      oldPositions[emailKey] = {
+        queueNumber: Number(data[i][9]),
+        originalEmail: String(data[i][1]).trim(),
+        displayName: String(data[i][2]).trim(),
+        issueType: String(data[i][4]).trim()
+      };
+    }
+  }
+  
+  // Step 2: Recalculate queue numbers
   let queueNum = 1;
   for (let i = 1; i < data.length; i++) {
     if (String(data[i][7]).trim().toLowerCase() === 'pending') {
       sheet.getRange(i + 1, 10).setValue(queueNum);
       queueNum++;
+    }
+  }
+  
+  // Step 3: Re-read and send emails to users whose position changed
+  const newData = sheet.getDataRange().getValues();
+  const startTime = Date.now();
+  for (let i = 1; i < newData.length; i++) {
+    if (Date.now() - startTime > 15000) break;
+    if (String(newData[i][7]).trim().toLowerCase() === 'pending') {
+      const emailKey = String(newData[i][1]).trim().toLowerCase();
+      const newPos = Number(newData[i][9]);
+      const oldInfo = oldPositions[emailKey];
+      
+      // Only send email if position actually changed
+      if (oldInfo && newPos !== oldInfo.queueNumber) {
+        try {
+          sendQueuePositionUpdateEmail({
+            email: oldInfo.originalEmail,
+            displayName: oldInfo.displayName || oldInfo.originalEmail.split('@')[0],
+            issueType: oldInfo.issueType,
+            newPosition: newPos
+          });
+        } catch (emailErr) {
+          Logger.log("Queue position email error: " + emailErr.toString());
+        }
+      }
     }
   }
 }
@@ -273,7 +329,7 @@ function submitFeedback(data) {
   const sheet = getSheet();
   const lock = LockService.getScriptLock();
   try {
-    lock.waitLock(10000);
+    lock.waitLock(28000);
     const rowIndex = parseInt(data.rowIndex);
     if (!rowIndex || rowIndex < 2) return { success: false, message: 'Invalid row reference' };
     
@@ -428,6 +484,8 @@ function sendSubmissionConfirmationEmail(data) {
           <!-- Issue Details Box -->
           <div style="background:#f3f4f6;border-radius:12px;padding:20px;margin-bottom:24px;border-left:4px solid #4f46e5;">
             <h2 style="color:#1f2937;font-size:16px;margin:0 0 16px;font-weight:700;">📋 Issue Details</h2>
+            <p style="margin:8px 0;color:#374151;font-size:14px;"><strong>Employee Name:</strong> ${data.displayName}</p>
+            <p style="margin:8px 0;color:#374151;font-size:14px;"><strong>Employee Email:</strong> ${data.email}</p>
             <p style="margin:8px 0;color:#374151;font-size:14px;"><strong>Issue Type:</strong> ${data.issueType}</p>
             <p style="margin:8px 0;color:#374151;font-size:14px;"><strong>Queue Number:</strong> #${data.queueNumber}</p>
             <p style="margin:8px 0;color:#374151;font-size:14px;"><strong>Submitted At:</strong> ${new Date(data.timestamp).toLocaleString('en-US', {dateStyle:'long', timeStyle:'short'})}</p>
@@ -464,6 +522,12 @@ function sendSubmissionConfirmationEmail(data) {
   </table>
 </body>
 </html>`;
+
+  let ccEmails = 'it@scot.lk';
+  const supervisorEmail = getSupervisorEmail(data.email);
+  if (supervisorEmail) {
+    ccEmails += ',' + supervisorEmail;
+  }
 
   MailApp.sendEmail({
     to: data.email,
@@ -557,6 +621,8 @@ function sendStatusUpdateEmail(data) {
           <!-- Issue Details Box -->
           <div style="background:#f3f4f6;border-radius:12px;padding:20px;margin-bottom:24px;border-left:4px solid ${config.color};">
             <h2 style="color:#1f2937;font-size:16px;margin:0 0 16px;font-weight:700;">📋 Issue Summary</h2>
+            <p style="margin:8px 0;color:#374151;font-size:14px;"><strong>Employee Name:</strong> ${data.displayName}</p>
+            <p style="margin:8px 0;color:#374151;font-size:14px;"><strong>Employee Email:</strong> ${data.email}</p>
             <p style="margin:8px 0;color:#374151;font-size:14px;"><strong>Issue Type:</strong> ${data.issueType}</p>
             ${screenshotSection}
             <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;">
@@ -585,12 +651,131 @@ function sendStatusUpdateEmail(data) {
 </body>
 </html>`;
 
+  let ccEmails = 'it@scot.lk';
+  const supervisorEmail = getSupervisorEmail(data.email);
+  if (supervisorEmail) {
+    ccEmails += ',' + supervisorEmail;
+  }
+
   MailApp.sendEmail({
     to: data.email,
     cc: ccEmails,
     subject: subject,
     htmlBody: htmlBody,
   });
+}
+
+/**
+ * Sends a queue position update email when a user's place in queue changes.
+ */
+function sendQueuePositionUpdateEmail(data) {
+  const isNext = data.newPosition === 1;
+  
+  const subject = isNext
+    ? '🔔 You\'re Next! Our IT Team is Now On Your Case'
+    : '📊 Queue Update: You\'re Now #' + data.newPosition + ' in Line';
+  
+  const badgeConfig = isNext ? {
+    emoji: '🎯',
+    label: '#1 — You\'re Next!',
+    color: '#047857',
+    bg: '#d1fae5',
+    border: '#6ee7b7',
+    headerSub: 'You\'re Next in Queue!'
+  } : {
+    emoji: '📋',
+    label: '#' + data.newPosition + ' in Queue',
+    color: '#1d4ed8',
+    bg: '#dbeafe',
+    border: '#93c5fd',
+    headerSub: 'Queue Position Updated'
+  };
+  
+  const mainMessage = isNext
+    ? `Great news! You're now <strong>#1 in the queue</strong>. Our IT team is now actively looking into your problem. Please stay available — we will be with you very soon!`
+    : `Your position in the IT support queue has been updated. You are now <strong>#${data.newPosition} in line</strong>. We're working through the queue as fast as we can — thank you for your patience!`;
+  
+  const ctaNote = isNext
+    ? 'Our team is now actively working on your issue. You will receive a resolution update shortly.'
+    : 'We will notify you again as your position gets closer to the front of the queue.';
+  
+  const htmlBody = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f8fafc;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;padding:32px 16px;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+        
+        <!-- Header -->
+        <tr><td style="background:linear-gradient(135deg,#4f46e5,#7c3aed);padding:32px;text-align:center;">
+          <div style="font-size:40px;margin-bottom:12px;">🛠️</div>
+          <h1 style="color:#ffffff;margin:0;font-size:22px;font-weight:700;letter-spacing:-0.02em;">IT Support Portal</h1>
+          <p style="color:rgba(255,255,255,0.8);margin:8px 0 0;font-size:14px;">${badgeConfig.headerSub}</p>
+        </td></tr>
+        
+        <!-- Body -->
+        <tr><td style="padding:32px;">
+          <p style="color:#374151;font-size:16px;margin:0 0 20px;">Hi <strong>${data.displayName}</strong>,</p>
+          <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 28px;">${mainMessage}</p>
+          
+          <!-- Queue Badge -->
+          <div style="text-align:center;margin:0 0 28px;">
+            <div style="display:inline-block;background:${badgeConfig.bg};border:2px solid ${badgeConfig.border};border-radius:16px;padding:24px 48px;">
+              <div style="font-size:44px;margin-bottom:8px;">${badgeConfig.emoji}</div>
+              <div style="color:${badgeConfig.color};font-size:22px;font-weight:800;">${badgeConfig.label}</div>
+              ${isNext ? `<div style="color:${badgeConfig.color};font-size:13px;margin-top:8px;font-weight:600;background:rgba(4,120,87,0.1);padding:4px 12px;border-radius:20px;">Now looking into your problem</div>` : ''}
+            </div>
+          </div>
+          
+          <!-- Issue Info Box -->
+          <div style="background:#f3f4f6;border-radius:12px;padding:16px 20px;margin-bottom:24px;border-left:4px solid ${badgeConfig.color};">
+            <p style="margin:0;color:#374151;font-size:14px;"><strong>Your Issue:</strong> ${data.issueType}</p>
+          </div>
+          
+          <p style="color:#6b7280;font-size:14px;line-height:1.6;margin:0;">${ctaNote}</p>
+        </td></tr>
+        
+        <!-- Footer -->
+        <tr><td style="background:#f9fafb;padding:20px 32px;border-top:1px solid #e5e7eb;text-align:center;">
+          <p style="color:#9ca3af;font-size:12px;margin:0;">
+            This is an automated notification from the IT Support Portal.<br>
+            Please do not reply to this email.
+          </p>
+        </td></tr>
+        
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+  
+  MailApp.sendEmail({
+    to: data.email,
+    cc: 'it@scot.lk',
+    subject: subject,
+    htmlBody: htmlBody,
+  });
+}
+
+/**
+ * Retrieves the supervisor email from the "Supervisors" sheet.
+ */
+function getSupervisorEmail(userEmail) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Supervisors');
+  if (!sheet) return null;
+  
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    const emailKey = String(data[i][0]).trim().toLowerCase();
+    if (emailKey === String(userEmail).trim().toLowerCase()) {
+      const supervisorEmail = String(data[i][1]).trim();
+      if (supervisorEmail) return supervisorEmail;
+    }
+  }
+  return null;
 }
 
 // ===== SETUP =====
@@ -622,7 +807,6 @@ function setupTrigger() {
        .setFontColor('#ffffff')
        .setVerticalAlignment('middle')
        .setHorizontalAlignment('center');
-       
   sheet.setRowHeight(1, 40);
   sheet.setFrozenRows(1);
   
@@ -685,10 +869,66 @@ function setupTrigger() {
     .build();
     
   sheet.setConditionalFormatRules([rulePending, ruleCompleted, ruleNotCompleted, ruleInProgress]);
-  
   // Protect Status column
   const protection = sheet.getRange('H2:H').protect().setDescription('Auto-managed Status');
   protection.setWarningOnly(true);
   
   Logger.log('Trigger, formatting, and email notifications configured successfully!');
+}
+
+/**
+ * Run this if rows or columns are hidden, or if the sheet looks broken.
+ */
+function fixMySheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet) return;
+
+  // 1. Unhide all columns (1 to 12)
+  sheet.showColumns(1, 12);
+  
+  // 2. Unhide all rows
+  sheet.showRows(1, sheet.getMaxRows());
+  
+  // 3. Remove any active filters that might be hiding rows
+  if (sheet.getFilter()) {
+    sheet.getFilter().remove();
+  }
+  
+  // 4. Reset row heights to be visible
+  sheet.setRowHeights(2, sheet.getMaxRows() - 1, 40);
+  
+  // 5. Hide only column 12 again
+  sheet.hideColumns(12);
+  
+  // 6. Alert the admin
+  SpreadsheetApp.getUi().alert("Sheet fixed! All rows and columns are now visible. If you have an old invalid issue stuck on row 2, you can now right-click the row number and click 'Delete row'.");
+}
+
+
+
+
+
+/**
+ * CAUTION: Run this function to DELETE ALL data from the sheet.
+ * It will keep the header row intact but remove everything else.
+ */
+function clearAllData() {
+  const ui = SpreadsheetApp.getUi();
+  const response = ui.alert('WARNING: Clear All Data', 'Are you sure you want to delete all issue records? This cannot be undone.', ui.ButtonSet.YES_NO);
+  
+  if (response === ui.Button.YES) {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(SHEET_NAME);
+    if (!sheet) return;
+    
+    const lastRow = sheet.getLastRow();
+    if (lastRow > 1) {
+      // Delete all rows from row 2 downwards
+      sheet.deleteRows(2, lastRow - 1);
+      ui.alert('Success', 'All data has been cleared.', ui.ButtonSet.OK);
+    } else {
+      ui.alert('Info', 'The sheet is already empty.', ui.ButtonSet.OK);
+    }
+  }
 }

@@ -1,8 +1,22 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import sheetsApi from '../services/sheetsApi';
 import { useAuth } from '../contexts/AuthContext';
 
-const POLL_INTERVAL = 3000; // 3 seconds for real-time updates
+// ─── SessionStorage helpers ──────────────────────────────────────────────────
+// Persists feedback-submitted state across page refreshes (within the same session).
+// Keyed by the sheet rowIndex so different issues don't interfere.
+const FB_KEY = 'it_portal_fb_submitted_row';
+
+function getFbRow() {
+    try { return Number(sessionStorage.getItem(FB_KEY) || 0); } catch { return 0; }
+}
+function setFbRow(rowIndex) {
+    try { sessionStorage.setItem(FB_KEY, String(rowIndex)); } catch {}
+}
+function clearFbRow() {
+    try { sessionStorage.removeItem(FB_KEY); } catch {}
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 export function useIssue() {
     const { user } = useAuth();
@@ -14,6 +28,8 @@ export function useIssue() {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    // Blocks the feedback panel even after refresh — persisted via sessionStorage
+    const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
     const pollRef = useRef(null);
 
     const userEmail = user?.email || '';
@@ -26,8 +42,25 @@ export function useIssue() {
             const result = await sheetsApi.getActiveIssue(userEmail);
             if (result.success && result.issue) {
                 setActiveIssue(result.issue);
+
+                const submittedRow = getFbRow();
+
+                if (result.issue.feedback) {
+                    // Sheet has the feedback saved — panel should never show
+                    setFeedbackSubmitted(false);
+                    clearFbRow();
+                } else if (submittedRow === result.issue.rowIndex) {
+                    // User submitted feedback this session but sheet not yet updated —
+                    // keep the panel blocked
+                    setFeedbackSubmitted(true);
+                } else {
+                    setFeedbackSubmitted(false);
+                }
             } else {
+                // No active issue — clear everything
                 setActiveIssue(null);
+                setFeedbackSubmitted(false);
+                clearFbRow();
             }
         } catch (err) {
             console.error('Error fetching active issue:', err);
@@ -68,12 +101,12 @@ export function useIssue() {
         }
     }, [userEmail]);
 
-    // Combined fetch
+    // Combined fetch (used by polling and manual refresh)
     const refreshData = useCallback(async () => {
         await Promise.all([fetchActiveIssue(), fetchQueueStatus(), fetchIssueHistory(true)]);
     }, [fetchActiveIssue, fetchQueueStatus, fetchIssueHistory]);
 
-    // Initial fetch
+    // Initial fetch on mount / user change
     useEffect(() => {
         if (userEmail) {
             setLoading(true);
@@ -83,18 +116,19 @@ export function useIssue() {
         }
     }, [userEmail, refreshData]);
 
-    // Polling active data
+    // Adaptive Polling: 15s if active issue, 30s if idle
+    // This prevents hitting the Google Apps Script 'Simultaneous Executions' quota with 100+ users
+    const hasActive = !!activeIssue;
     useEffect(() => {
         if (userEmail) {
-            pollRef.current = setInterval(refreshData, POLL_INTERVAL);
+            const currentInterval = hasActive ? 15000 : 30000;
+            pollRef.current = setInterval(refreshData, currentInterval);
         }
 
         return () => {
-            if (pollRef.current) {
-                clearInterval(pollRef.current);
-            }
+            if (pollRef.current) clearInterval(pollRef.current);
         };
-    }, [userEmail, refreshData]);
+    }, [userEmail, hasActive, refreshData]);
 
     // Submit new issue
     const submitIssue = async ({ issueType, phone, description, screenshotUrl }) => {
@@ -142,8 +176,13 @@ export function useIssue() {
             });
 
             if (result.success) {
+                // 1. Persist to sessionStorage FIRST — survives page refresh
+                setFbRow(activeIssue.rowIndex);
+                // 2. Immediately block the panel in React state
+                setFeedbackSubmitted(true);
                 setSuccess('Thank you for your feedback!');
                 setActiveIssue(null);
+                // 3. Re-fetch in background (sheet may not reflect yet — that's OK)
                 await refreshData();
                 fetchIssueHistory();
                 return result;
@@ -187,7 +226,9 @@ export function useIssue() {
         clearMessages,
         hasActiveIssue: !!activeIssue,
         isCompleted: activeIssue?.status === 'Completed' || activeIssue?.status === 'Not Completed',
-        needsFeedback: !!activeIssue?.adminResolution && !activeIssue?.feedback,
+        // Panel blocked if: (1) feedback just submitted in this session  OR
+        //                   (2) still waiting for sheet to reflect it on refresh
+        needsFeedback: !!activeIssue?.adminResolution && !activeIssue?.feedback && !feedbackSubmitted,
     };
 }
 
