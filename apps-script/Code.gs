@@ -455,7 +455,6 @@ function sendSubmissionConfirmationEmail(data) {
   const subject = '✅ IT Support Request Received - ' + data.issueType;
   
   const hodEmail = getHodEmail(data.email);
-  const ccEmails = hodEmail ? 'it@scot.lk,' + hodEmail : 'it@scot.lk';
   
   
   const screenshotSection = data.screenshotUrl
@@ -529,9 +528,10 @@ function sendSubmissionConfirmationEmail(data) {
 
   let ccEmails = 'it@scot.lk';
   const supervisorEmail = getSupervisorEmail(data.email);
-  if (supervisorEmail) {
-    ccEmails += ',' + supervisorEmail;
-  }
+  if (supervisorEmail) ccEmails += ',' + supervisorEmail;
+  if (hodEmail) ccEmails += ',' + hodEmail;
+  const assignees = getAssigneeEmails(data.issueType);
+  if (assignees) ccEmails += ',' + assignees;
 
   MailApp.sendEmail({
     to: data.email,
@@ -546,7 +546,6 @@ function sendSubmissionConfirmationEmail(data) {
  */
 function sendStatusUpdateEmail(data) {
   const hodEmail = getHodEmail(data.email);
-  const ccEmails = hodEmail ? 'it@scot.lk,' + hodEmail : 'it@scot.lk';
 
   const statusConfig = {
     'Completed': {
@@ -657,9 +656,10 @@ function sendStatusUpdateEmail(data) {
 
   let ccEmails = 'it@scot.lk';
   const supervisorEmail = getSupervisorEmail(data.email);
-  if (supervisorEmail) {
-    ccEmails += ',' + supervisorEmail;
-  }
+  if (supervisorEmail) ccEmails += ',' + supervisorEmail;
+  if (hodEmail) ccEmails += ',' + hodEmail;
+  const assignees = getAssigneeEmails(data.issueType);
+  if (assignees) ccEmails += ',' + assignees;
 
   MailApp.sendEmail({
     to: data.email,
