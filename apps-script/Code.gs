@@ -500,6 +500,12 @@ function sendSubmissionConfirmationEmail(data) {
     ccEmails += ',' + supervisorEmail;
   }
 
+  // Include assignees for this issue type (optional sheet: "Assignees")
+  const assignees = getAssigneeEmails(data.issueType);
+  if (assignees) {
+    ccEmails += ',' + assignees;
+  }
+
   MailApp.sendEmail({
     to: data.email,
     cc: ccEmails,
@@ -625,6 +631,12 @@ function sendStatusUpdateEmail(data) {
     ccEmails += ',' + supervisorEmail;
   }
 
+  // Include assignees for this issue type (optional sheet: "Assignees")
+  const assignees = getAssigneeEmails(data.issueType);
+  if (assignees) {
+    ccEmails += ',' + assignees;
+  }
+
   MailApp.sendEmail({
     to: data.email,
     cc: ccEmails,
@@ -721,7 +733,18 @@ function sendQueuePositionUpdateEmail(data) {
   
   MailApp.sendEmail({
     to: data.email,
-    cc: 'it@scot.lk',
+    cc: (function(){
+      let cc = 'it@scot.lk';
+      try {
+        const sup = getSupervisorEmail(data.email);
+        if (sup) cc += ',' + sup;
+      } catch (e){}
+      try {
+        const ass = getAssigneeEmails(data.issueType);
+        if (ass) cc += ',' + ass;
+      } catch (e){}
+      return cc;
+    })(),
     subject: subject,
     htmlBody: htmlBody,
   });
@@ -741,6 +764,28 @@ function getSupervisorEmail(userEmail) {
     if (emailKey === String(userEmail).trim().toLowerCase()) {
       const supervisorEmail = String(data[i][1]).trim();
       if (supervisorEmail) return supervisorEmail;
+    }
+  }
+  return null;
+}
+
+/**
+ * Retrieves comma-separated assignee emails for a given issue type from the "Assignees" sheet.
+ * Sheet format: Column A = Issue Type (exact match), Column B = Comma-separated emails (no spaces required).
+ */
+function getAssigneeEmails(issueType) {
+  if (!issueType) return null;
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Assignees');
+  if (!sheet) return null;
+
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    const key = String(data[i][0] || '').trim();
+    if (!key) continue;
+    if (key.toLowerCase() === String(issueType).trim().toLowerCase()) {
+      const emails = String(data[i][1] || '').trim();
+      return emails ? emails.split(',').map(function(e){ return e.trim(); }).filter(Boolean).join(',') : null;
     }
   }
   return null;
