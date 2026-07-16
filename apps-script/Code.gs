@@ -53,6 +53,31 @@ function getSheet() {
   return sheet;
 }
 
+// ===== HOD MAPPING =====
+
+function getHodEmail(employeeEmail) {
+  if (!employeeEmail) return null;
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('HOD-emails');
+  if (!sheet) {
+    sheet = ss.insertSheet('HOD-emails');
+    sheet.getRange(1, 1, 1, 2).setValues([['employee-email', 'HOD-email']]);
+    sheet.getRange(1, 1, 1, 2).setFontWeight('bold').setBackground('#f3f4f6');
+    sheet.setColumnWidth(1, 250);
+    sheet.setColumnWidth(2, 250);
+    return null;
+  }
+  
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][0]).trim().toLowerCase() === String(employeeEmail).trim().toLowerCase()) {
+      const hodEmail = String(data[i][1]).trim();
+      return hodEmail ? hodEmail : null;
+    }
+  }
+  return null;
+}
+
 // ===== IMAGE HANDLING =====
 
 /**
@@ -425,6 +450,10 @@ function onEditTrigger(e) {
 function sendSubmissionConfirmationEmail(data) {
   const subject = '✅ IT Support Request Received - ' + data.issueType;
   
+  const hodEmail = getHodEmail(data.email);
+  const ccEmails = hodEmail ? 'it@scot.lk,' + hodEmail : 'it@scot.lk';
+  
+  
   const screenshotSection = data.screenshotUrl
     ? '<p style="margin:8px 0;"><strong>Screenshot:</strong> <a href="' + data.screenshotUrl + '" style="color:#4f46e5;">View Screenshot</a></p>'
     : '';
@@ -500,12 +529,6 @@ function sendSubmissionConfirmationEmail(data) {
     ccEmails += ',' + supervisorEmail;
   }
 
-  // Include assignees for this issue type (optional sheet: "Assignees")
-  const assignees = getAssigneeEmails(data.issueType);
-  if (assignees) {
-    ccEmails += ',' + assignees;
-  }
-
   MailApp.sendEmail({
     to: data.email,
     cc: ccEmails,
@@ -518,6 +541,9 @@ function sendSubmissionConfirmationEmail(data) {
  * Sends a status update email to the user when admin changes their issue status.
  */
 function sendStatusUpdateEmail(data) {
+  const hodEmail = getHodEmail(data.email);
+  const ccEmails = hodEmail ? 'it@scot.lk,' + hodEmail : 'it@scot.lk';
+
   const statusConfig = {
     'Completed': {
       emoji: '✅',
@@ -629,12 +655,6 @@ function sendStatusUpdateEmail(data) {
   const supervisorEmail = getSupervisorEmail(data.email);
   if (supervisorEmail) {
     ccEmails += ',' + supervisorEmail;
-  }
-
-  // Include assignees for this issue type (optional sheet: "Assignees")
-  const assignees = getAssigneeEmails(data.issueType);
-  if (assignees) {
-    ccEmails += ',' + assignees;
   }
 
   MailApp.sendEmail({
