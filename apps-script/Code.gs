@@ -914,6 +914,56 @@ function setupTrigger() {
 }
 
 /**
+ * Creates helper routing sheets: `Supervisors`, `Assignees`, and `HOD-emails`.
+ * Run this once from the Apps Script editor to populate example routing rows.
+ */
+function createRoutingSheets() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // Supervisors sheet (ReporterEmail | SupervisorEmail)
+  let sup = ss.getSheetByName('Supervisors');
+  if (!sup) {
+    sup = ss.insertSheet('Supervisors');
+    sup.getRange(1,1,1,2).setValues([['ReporterEmail','SupervisorEmail']]);
+    sup.getRange(2,1,2,2).setValues([
+      ['user1@scot.lk','hod1@scot.lk'],
+      ['user2@scot.lk','hod1@scot.lk']
+    ]);
+    sup.getRange(1,1,1,2).setFontWeight('bold');
+    sup.setColumnWidth(1,260);
+    sup.setColumnWidth(2,260);
+  }
+
+  // Assignees sheet (Issue Type | Comma-separated assignee emails)
+  let ass = ss.getSheetByName('Assignees');
+  if (!ass) {
+    ass = ss.insertSheet('Assignees');
+    ass.getRange(1,1,1,2).setValues([['Issue Type','Assignees']]);
+    ass.getRange(2,1,1,2).setValues([
+      ['Network','it1@scot.lk,it2@scot.lk']
+    ]);
+    ass.getRange(1,1,1,2).setFontWeight('bold');
+    ass.setColumnWidth(1,220);
+    ass.setColumnWidth(2,360);
+  }
+
+  // HOD-emails sheet used by getHodEmail (employee-email | HOD-email)
+  let hod = ss.getSheetByName('HOD-emails');
+  if (!hod) {
+    hod = ss.insertSheet('HOD-emails');
+    hod.getRange(1,1,1,2).setValues([['employee-email','HOD-email']]);
+    hod.getRange(2,1,1,2).setValues([
+      ['user1@scot.lk','hod1@scot.lk']
+    ]);
+    hod.getRange(1,1,1,2).setFontWeight('bold');
+    hod.setColumnWidth(1,260);
+    hod.setColumnWidth(2,260);
+  }
+
+  Logger.log('Routing sheets created/verified: Supervisors, Assignees, HOD-emails');
+}
+
+/**
  * Run this if rows or columns are hidden, or if the sheet looks broken.
  */
 function fixMySheet() {
