@@ -11,8 +11,10 @@ const SHEET_NAME = 'Issues';
 // ===== ROUTING =====
 
 function doGet(e) {
+  // Allow safe manual execution from the editor by guarding missing event objects
+  e = e || { parameter: {} };
   try {
-    const action = e.parameter.action;
+    const action = (e.parameter && e.parameter.action) || '';
     let result;
     switch (action) {
       case 'getActiveIssue': result = getActiveIssue(e.parameter.email); break;
@@ -28,8 +30,10 @@ function doGet(e) {
 }
 
 function doPost(e) {
+  // Guard when run manually from the editor (no postData)
+  e = e || { postData: { contents: '{}' } };
   try {
-    const data = JSON.parse(e.postData.contents);
+    const data = JSON.parse(e.postData.contents || '{}');
     let result;
     switch (data.action) {
       case 'submitIssue': result = submitIssue(data); break;
